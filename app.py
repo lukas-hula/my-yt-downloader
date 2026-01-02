@@ -86,7 +86,15 @@ if submit_button:
                 'format': 'bestaudio/best',
                 'outtmpl': '%(title)s.%(ext)s',
                 'quiet': True,
-                'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                # Klíčové parametry pro obcházení 403:
+                'nocheckcertificate': True,
+                'extratitles': True,
+                'extractor_args': {
+                    'youtube': {
+                        'player_client': ['android', 'web'],
+                        'player_skip': ['webpage', 'configs'],
+                    }
+                },
                 'postprocessors': [{
                     'key': 'FFmpegExtractAudio',
                     'preferredcodec': 'mp3',
