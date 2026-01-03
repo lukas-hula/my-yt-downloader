@@ -109,9 +109,9 @@ if submit_btn and url_input:
                 </table>
             """, unsafe_allow_html=True)
             
-            # AUDIO PŘEHRÁVAČ (Nový řádek v tabulce by byl příliš malý, proto je pod ní)
+            # AUDIO PŘEHRÁVAČ - Opraveno pomocí st.video pro funkční embedding
             st.write("🎵 **Poslechová ukázka:**")
-            st.audio(f"https://www.youtube.com/watch?v={video_id}")
+            st.video(f"https://www.youtube.com/watch?v={video_id}")
             
             st.markdown(f"""
                 <table class="analysis-table">
