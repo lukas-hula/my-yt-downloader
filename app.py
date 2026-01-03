@@ -139,7 +139,7 @@ if submit_btn and url_input:
             <table class="analysis-table">
                 {itunes_data}
                 <tr><td class="label-col">Kvalita</td><td>320 kbps (HD)</td></tr>
-                <tr><td class="label-col">YouTube ID</td><td><code>{video_id}</code></td></tr>
+                <tr><td class="label-col">ID YouTube</td><td><code>{video_id}</code></td></tr>
                 <tr>
                     <td class="label-col">Služby</td>
                     <td>
