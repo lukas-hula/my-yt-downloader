@@ -9,7 +9,7 @@ import urllib.parse
 # --- KONFIGURACE ---
 st.set_page_config(page_title="AudioFlow Pro", page_icon="🎵", layout="centered")
 
-# --- DESIGN (Zafixovaný styl podle předchozích verzí) ---
+# --- DESIGN (Zafixovaný styl) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
@@ -52,12 +52,10 @@ def get_itunes_meta(query):
         res = requests.get(url).json()
         if res['resultCount'] > 0:
             track = res['results'][0]
-            clean_query = urllib.parse.quote(query)
             return {
                 "album": track.get("collectionName", "Neznámo"),
                 "genre": track.get("primaryGenreName", "Neznámo"),
-                "year": track.get("releaseDate", "0000")[:4],
-                "spotify_url": f"https://open.spotify.com/search/{clean_query}"
+                "year": track.get("releaseDate", "0000")[:4]
             }
     except: pass
     return None
@@ -86,16 +84,13 @@ if submit_btn and url_input:
     
     if video_id:
         try:
-            # Metadata z YouTube
             info_res = requests.get(f"https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={video_id}&format=json")
             video_info = info_res.json()
             title = video_info.get('title', 'Skladba z YouTube')
             thumb_url = f"https://img.youtube.com/vi/{video_id}/mqdefault.jpg"
             
-            # iTunes detektiv
             music_meta = get_itunes_meta(title)
             
-            # RapidAPI pro MP3
             RAPIDAPI_KEY = st.secrets["RAPIDAPI_KEY"]
             headers = {"x-rapidapi-key": RAPIDAPI_KEY, "x-rapidapi-host": "youtube-mp36.p.rapidapi.com"}
             
@@ -111,7 +106,7 @@ if submit_btn and url_input:
             
             search_query = urllib.parse.quote(title)
             
-            # 1. Horní tabulka (Náhled a Název)
+            # 1. HORNÍ TABULKA
             st.markdown(f"""
                 <table class="analysis-table">
                     <tr>
@@ -122,25 +117,25 @@ if submit_btn and url_input:
                 </table>
             """, unsafe_allow_html=True)
             
-            # Přehrávač
+            # PŘEHRÁVAČ
             st.write("🎵 **Poslechová ukázka:**")
             st.video(f"https://www.youtube.com/watch?v={video_id}")
             
-            # 2. Sjednocená dolní tabulka (iTunes + Technické údaje + Služby)
-            itunes_rows = ""
+            # 2. SESTAVENÍ DOLNÍ TABULKY DO JEDNÉ PROMĚNNÉ
+            itunes_html = ""
             if music_meta:
-                itunes_rows = f"""
+                itunes_html = f"""
                     <tr><td class="label-col">Album</td><td>{music_meta['album']}</td></tr>
                     <tr><td class="label-col">Žánr</td><td>{music_meta['genre']}</td></tr>
                     <tr><td class="label-col">Rok</td><td>{music_meta['year']}</td></tr>
                 """
             
-            spotify_link = music_meta['spotify_url'] if music_meta else f"https://open.spotify.com/search/{search_query}"
+            spotify_url = f"https://open.spotify.com/search/{search_query}"
             
-            # DŮLEŽITÉ: Celá tato tabulka musí být v jednom st.markdown s unsafe_allow_html=True
-            st.markdown(f"""
+            # Finální sestavení tabulky
+            final_table_html = f"""
                 <table class="analysis-table">
-                    {itunes_rows}
+                    {itunes_html}
                     <tr><td class="label-col">Kvalita</td><td>320 kbps (HD)</td></tr>
                     <tr><td class="label-col">YouTube ID</td><td><code>{video_id}</code></td></tr>
                     <tr>
@@ -148,11 +143,14 @@ if submit_btn and url_input:
                         <td>
                             <a href="https://chordify.net/search/{search_query}" target="_blank" class="service-link chordify">🎸 Akordy</a>
                             <a href="https://genius.com/search?q={search_query}" target="_blank" class="service-link genius">📝 Text</a>
-                            <a href="{spotify_link}" target="_blank" class="service-link spotify">🎧 Spotify</a>
+                            <a href="{spotify_url}" target="_blank" class="service-link spotify">🎧 Spotify</a>
                         </td>
                     </tr>
                 </table>
-            """, unsafe_allow_html=True)
+            """
+            
+            # Vykreslení celé tabulky najednou
+            st.markdown(final_table_html, unsafe_allow_html=True)
             
             if found_link:
                 st.balloons()
