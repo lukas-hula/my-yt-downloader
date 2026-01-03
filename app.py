@@ -103,7 +103,7 @@ if submit_btn and url_input:
                 <table class="analysis-table">
                     <tr>
                         <td class="label-col">Skladba</td>
-                        <td><img src="{thumb_url}" class="mini-thumb"><br><strong>{title}</strong></td>
+                        <td><strong>{title}</strong></td>
                     </tr>
                     <tr><td class="label-col">Délka</td><td>{duration_str}</td></tr>
                 </table>
