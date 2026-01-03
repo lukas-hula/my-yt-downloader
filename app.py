@@ -24,6 +24,9 @@ st.markdown("""
     .mini-thumb { width: 100px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
     
     /* OPRAVENÉ VSTUPNÍ POLE - bez oříznutí */
+    .st.bv {
+        height: auto;
+    }
     .stTextInput input { 
         border-radius: 16px !important; 
         background-color: #f5f5f7 !important; 
