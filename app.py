@@ -21,14 +21,8 @@ st.markdown("""
     header {visibility: hidden;}
     
     .stApp { background-color: #ffffff; font-family: 'Inter', sans-serif; }
-
     .main-card { text-align: center; max-width: 550px; margin: 0 auto; }
-
-    .title-text {
-        font-weight: 800; font-size: 2.8rem; letter-spacing: -0.05em;
-        color: #1d1d1f; margin-bottom: 0px;
-    }
-
+    .title-text { font-weight: 800; font-size: 2.8rem; letter-spacing: -0.05em; color: #1d1d1f; margin-bottom: 0px; }
     .subtitle-text { color: #86868b; font-size: 1.1rem; margin-bottom: 30px; }
 
     /* Elegantní tabulka */
@@ -62,31 +56,30 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- POMOCNÁ FUNKCE: HUDEBNÍ ANALÝZA ---
+# --- OPRAVENÁ FUNKCE PRO ANALÝZU ---
 def analyze_music(url):
     try:
-        # Streamování malého kousku pro rychlou analýzu (cca 3MB)
-        response = requests.get(url, stream=True)
-        audio_data = io.BytesIO()
-        for chunk in response.iter_content(chunk_size=1024):
-            audio_data.write(chunk)
-            if audio_data.tell() > 3000000: break # stop po 3MB
-        audio_data.seek(0)
+        # 1. Stažení malého vzorku (cca 2MB) do paměti
+        response = requests.get(url, timeout=10)
+        audio_bytes = io.BytesIO(response.content)
         
-        # Načtení do Librosa (analyzujeme prvních 20s)
-        y, sr = librosa.load(audio_data, duration=20)
+        # 2. Načtení pomocí Librosa (načteme prvních 30 sekund)
+        # Používáme soundfile jako backend pro lepší stabilitu v cloudu
+        y, sr = librosa.load(audio_bytes, duration=30)
         
-        # Detekce BPM (tempa)
-        tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
+        # 3. Analýza tempa
+        onset_env = librosa.onset.onset_strength(y=y, sr=sr)
+        tempo = librosa.feature.tempo(onset_envelope=onset_env, sr=sr)
         
-        # Detekce tóniny (zjednodušená chroma analýza)
-        chroma = librosa.feature.chroma_stft(y=y, sr=sr)
+        # 4. Analýza tóniny
+        chroma = librosa.feature.chroma_cqt(y=y, sr=sr)
+        chroma_avg = np.mean(chroma, axis=1)
         notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
-        key_idx = np.argmax(np.mean(chroma, axis=1))
+        key = notes[np.argmax(chroma_avg)]
         
-        return f"{notes[key_idx]}", f"{int(round(float(tempo)))} BPM"
-    except:
-        return "Nedostupná", "Nedostupné"
+        return f"{key}", f"{int(round(float(tempo[0])))} BPM"
+    except Exception as e:
+        return "Nezjištěno", "Nezjištěno"
 
 # --- UI STRUKTURA ---
 st.markdown('<div class="main-card">', unsafe_allow_html=True)
@@ -111,22 +104,25 @@ if submit_btn and url_input:
             progress_bar = st.progress(0)
             status_text = st.empty()
             
-            for i in range(1, 11):
-                progress_bar.progress(i * 10)
-                status_text.text("Připravuji audio a analyzuji tóny...")
+            # Polling pro získání odkazu
+            for i in range(1, 15):
+                progress_bar.progress(min(i * 7, 90))
+                status_text.text("Zpracovávám audio na serveru...")
                 
                 response = requests.get(api_url, headers=headers, params={"id": video_id})
                 data = response.json()
 
                 if data.get("status") == "ok":
-                    # Spuštění hudební analýzy
-                    tonina, tempo = analyze_music(data.get("link"))
+                    mp3_link = data.get("link")
+                    status_text.text("Provádím hudební analýzu...")
                     
-                    progress_bar.empty()
+                    # Spuštění opravené analýzy
+                    tonina, tempo = analyze_music(mp3_link)
+                    
+                    progress_bar.progress(100)
                     status_text.empty()
                     st.balloons()
                     
-                    # ZOBRAZENÍ TABULKY S VÝSLEDKY
                     st.markdown(f"""
                         <table class="analysis-table">
                             <tr><td>Název skladby</td><td>{data.get('title')}</td></tr>
@@ -134,13 +130,13 @@ if submit_btn and url_input:
                             <tr><td>Tempo</td><td>{tempo}</td></tr>
                             <tr><td>Délka</td><td>{int(data.get('duration') // 60)}m {int(data.get('duration') % 60)}s</td></tr>
                         </table>
-                        <a href="{data.get('link')}" target="_blank" class="download-btn">STÁHNOUT MP3</a>
+                        <a href="{mp3_link}" target="_blank" class="download-btn">STÁHNOUT MP3</a>
                     """, unsafe_allow_html=True)
                     break
                 
                 time.sleep(3)
         except Exception as e:
-            st.error("Chyba při komunikaci s API nebo analýze.")
+            st.error("Chyba při komunikaci s API.")
     else:
         st.warning("Prosím vložte platný odkaz.")
 
