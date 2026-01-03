@@ -33,7 +33,7 @@ def analyze_music(url):
         
         # Načtení přímo do librosa přes soundfile backend
         # To je v cloudovém Streamlitu nejstabilnější cesta
-        y, sr = librosa.load(audio_stream, duration=20)
+        y, sr = librosa.load(audio_stream, duration=30)
         
         # Analýza tóniny
         chroma = librosa.feature.chroma_stft(y=y, sr=sr)
