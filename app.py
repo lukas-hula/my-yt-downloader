@@ -62,11 +62,13 @@ def get_itunes_meta(query):
         res = requests.get(url).json()
         if res['resultCount'] > 0:
             track = res['results'][0]
+            # Vytvoření odkazu na Spotify vyhledávání
+            clean_query = urllib.parse.quote(query)
             return {
                 "album": track.get("collectionName", "Neznámo"),
                 "genre": track.get("primaryGenreName", "Neznámo"),
                 "year": track.get("releaseDate", "0000")[:4],
-                "spotify_search": f"https://open.spotify.com/search/{urllib.parse.quote(query)}"
+                "spotify_url": f"https://open.spotify.com/search/{clean_query}"
             }
     except: pass
     return None
@@ -120,7 +122,7 @@ if submit_btn and url_input:
             
             search_query = urllib.parse.quote(title)
             
-            # Horní tabulka (Základní info)
+            # 1. Tabulka (Základní info)
             st.markdown(f"""
                 <table class="analysis-table">
                     <tr>
@@ -135,7 +137,7 @@ if submit_btn and url_input:
             st.write("🎵 **Poslechová ukázka:**")
             st.video(f"https://www.youtube.com/watch?v={video_id}")
             
-            # Sjednocená dolní tabulka (iTunes + Technické údaje + Služby)
+            # 2. Sjednocená dolní tabulka (iTunes + Technické údaje + Služby)
             itunes_rows = ""
             if music_meta:
                 itunes_rows = f"""
@@ -144,7 +146,7 @@ if submit_btn and url_input:
                     <tr><td class="label-col">Rok</td><td>{music_meta['year']}</td></tr>
                 """
             
-            spotify_btn = f'<a href="{music_meta["spotify_search"]}" target="_blank" class="service-link spotify">🎧 Spotify</a>' if music_meta else ""
+            spotify_link = music_meta['spotify_url'] if music_meta else f"https://open.spotify.com/search/{search_query}"
             
             st.markdown(f"""
                 <table class="analysis-table">
@@ -156,7 +158,7 @@ if submit_btn and url_input:
                         <td>
                             <a href="https://chordify.net/search/{search_query}" target="_blank" class="service-link chordify">🎸 Akordy</a>
                             <a href="https://genius.com/search?q={search_query}" target="_blank" class="service-link genius">📝 Text</a>
-                            {spotify_btn}
+                            <a href="{spotify_link}" target="_blank" class="service-link spotify">🎧 Spotify</a>
                         </td>
                     </tr>
                 </table>
