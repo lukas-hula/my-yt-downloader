@@ -9,7 +9,7 @@ import urllib.parse
 # --- KONFIGURACE ---
 st.set_page_config(page_title="AudioFlow Pro", page_icon="🎵", layout="centered")
 
-# --- DESIGN (Oprava paddingu tlačítka) ---
+# --- DESIGN (Všechny dřívější úpravy zafixovány) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
@@ -18,32 +18,26 @@ st.markdown("""
     .title-text { font-weight: 800; font-size: 3rem; color: #1d1d1f; margin-bottom: 5px; }
     .subtitle-text { color: #86868b; font-size: 1.1rem; margin-bottom: 40px; }
     
-    /* Vylepšené Černé tlačítko s větším paddingem */
-    .stButton button { 
-        background-color: #1d1d1f !important; 
-        color: white !important; 
-        border-radius: 30px !important; /* Více zaoblené */
-        width: 100% !important; 
-        border: none !important; 
-        padding: 16px 32px !important; /* Zvětšený padding (nahoře/dole, vlevo/vpravo) */
-        font-weight: 600 !important;
-        font-size: 1rem !important;
-        letter-spacing: 0.02em !important; /* Rozestup písmen */
-        transition: all 0.2s ease-in-out !important;
-    }
-
-    /* Efekt při najetí myší */
-    .stButton button:hover {
-        background-color: #333333 !important;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-    
-    /* Tabulka s miniaturou */
+    /* Tabulka s miniaturou - zafixováno */
     .analysis-table { width: 100%; border-collapse: collapse; margin: 20px 0; background-color: #f5f5f7; border-radius: 15px; overflow: hidden; }
     .analysis-table td { padding: 15px 20px; border-bottom: 1px solid #e5e5e7; text-align: left; vertical-align: middle; }
     .label-col { color: #86868b !important; font-weight: 600; width: 35%; }
-    .mini-thumb { width: 80px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .mini-thumb { width: 100px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+    
+    /* Vylepšené Černé tlačítko s opraveným paddingem - zafixováno */
+    .stButton button { 
+        background-color: #1d1d1f !important; 
+        color: white !important; 
+        border-radius: 30px !important; 
+        width: 100% !important; 
+        border: none !important; 
+        padding: 16px 32px !important; 
+        font-weight: 600 !important;
+        font-size: 1rem !important;
+        letter-spacing: 0.02em !important;
+        transition: all 0.2s ease-in-out !important;
+    }
+    .stButton button:hover { background-color: #333333 !important; transform: translateY(-1px); }
     
     .stTextInput input { border-radius: 12px !important; background-color: #f5f5f7 !important; border: 1px solid #d2d2d7 !important; padding: 12px !important; }
     
@@ -69,7 +63,7 @@ def log_to_csv(title, video_id, duration_str):
     else:
         new_data.to_csv(log_file, mode='a', index=False, header=False, encoding='utf-8-sig')
 
-# --- HLAVNÍ STRÁNKA ---
+# --- UI ---
 st.markdown('<div class="main-card">', unsafe_allow_html=True)
 st.markdown('<h1 class="title-text">AudioFlow</h1>', unsafe_allow_html=True)
 st.markdown('<p class="subtitle-text">Profesionální hudební nástroj</p>', unsafe_allow_html=True)
@@ -84,44 +78,47 @@ if submit_btn and url_input:
     
     if video_id:
         try:
-            # Metadata přes oEmbed
             info_res = requests.get(f"https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={video_id}&format=json")
             video_info = info_res.json()
             title = video_info.get('title', 'Skladba z YouTube')
-            thumb_url = f"https://img.youtube.com/vi/{video_id}/mqdefault.jpg" # Menší náhled pro tabulku
+            thumb_url = f"https://img.youtube.com/vi/{video_id}/mqdefault.jpg"
             
-            # RapidAPI pro MP3
             RAPIDAPI_KEY = st.secrets["RAPIDAPI_KEY"]
             headers = {"x-rapidapi-key": RAPIDAPI_KEY, "x-rapidapi-host": "youtube-mp36.p.rapidapi.com"}
             
-            with st.spinner("Zpracovávám..."):
+            with st.spinner("Zpracovávám náhled a soubor..."):
                 found_link = None
                 duration_str = "Neznámo"
-                for _ in range(8):
-                    res = requests.get("https://youtube-mp36.p.rapidapi.com/dl", headers=headers, params={"id": video_id})
-                    api_data = res.json()
-                    if api_data.get("status") == "ok":
-                        found_link = api_data.get("link")
-                        duration = api_data.get("duration", 0)
-                        duration_str = f"{int(duration // 60)}m {int(duration % 60):02d}s"
-                        break
-                    time.sleep(2)
+                res = requests.get("https://youtube-mp36.p.rapidapi.com/dl", headers=headers, params={"id": video_id})
+                api_data = res.json()
+                if api_data.get("status") == "ok":
+                    found_link = api_data.get("link")
+                    duration = api_data.get("duration", 0)
+                    duration_str = f"{int(duration // 60)}m {int(duration % 60):02d}s"
             
             search_query = urllib.parse.quote(title)
             
-            # ZOBRAZENÍ TABULKY S MINIATUROU A ÚDAJI
+            # Zobrazení Tabulky (zafixováno)
             st.markdown(f"""
                 <table class="analysis-table">
                     <tr>
-                        <td class="label-col">Náhled</td>
-                        <td><img src="{thumb_url}" class="mini-thumb"></td>
+                        <td class="label-col">Skladba</td>
+                        <td><img src="{thumb_url}" class="mini-thumb"><br><strong>{title}</strong></td>
                     </tr>
-                    <tr><td class="label-col">Název</td><td>{title}</td></tr>
                     <tr><td class="label-col">Délka</td><td>{duration_str}</td></tr>
+                </table>
+            """, unsafe_allow_html=True)
+            
+            # AUDIO PŘEHRÁVAČ (Nový řádek v tabulce by byl příliš malý, proto je pod ní)
+            st.write("🎵 **Poslechová ukázka:**")
+            st.audio(f"https://www.youtube.com/watch?v={video_id}")
+            
+            st.markdown(f"""
+                <table class="analysis-table">
                     <tr><td class="label-col">Kvalita</td><td>320 kbps (HD)</td></tr>
                     <tr><td class="label-col">YouTube ID</td><td><code>{video_id}</code></td></tr>
                     <tr>
-                        <td class="label-col">Externí zdroje</td>
+                        <td class="label-col">Služby</td>
                         <td>
                             <a href="https://chordify.net/search/{search_query}" target="_blank" class="service-link chordify">🎸 Akordy</a>
                             <a href="https://genius.com/search?q={search_query}" target="_blank" class="service-link genius">📝 Text</a>
@@ -134,15 +131,13 @@ if submit_btn and url_input:
                 st.balloons()
                 st.markdown(f'<a href="{found_link}" target="_blank" class="download-link">💾 STÁHNOUT SOUBOR</a>', unsafe_allow_html=True)
                 log_to_csv(title, video_id, duration_str)
-            else:
-                st.warning("⚠️ Převod trvá déle než obvykle. Zkuste prosím za okamžik znovu kliknout na tlačítko.")
-                
+            
         except Exception as e:
             st.error("Chyba při komunikaci se serverem.")
     else:
         st.warning("Vložte platný odkaz.")
 
-# --- HISTORIE ---
+# --- HISTORIE (Zafixováno) ---
 st.markdown('<div class="history-title">Historie stažení</div>', unsafe_allow_html=True)
 if os.path.isfile("history.csv"):
     df_history = pd.read_csv("history.csv")
