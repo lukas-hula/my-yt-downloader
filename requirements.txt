@@ -2,5 +2,4 @@ streamlit
 requests
 librosa
 numpy
-pydub
-ffmpy
+soundfile
