@@ -9,7 +9,7 @@ import urllib.parse
 # --- KONFIGURACE ---
 st.set_page_config(page_title="AudioFlow Pro", page_icon="🎵", layout="centered")
 
-# --- DESIGN (Zvětšený input a Apple Look) ---
+# --- DESIGN (Oprava oříznutého inputu) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
@@ -23,13 +23,15 @@ st.markdown("""
     .label-col { color: #86868b !important; font-weight: 600; width: 35%; }
     .mini-thumb { width: 100px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
     
-    /* ZVĚTŠENÝ VSTUPNÍ POLE (Input) */
+    /* OPRAVENÉ VSTUPNÍ POLE - bez oříznutí */
     .stTextInput input { 
         border-radius: 16px !important; 
         background-color: #f5f5f7 !important; 
         border: 1px solid #d2d2d7 !important; 
-        padding: 20px 24px !important; /* Výrazně větší padding */
-        font-size: 1.2rem !important; /* Větší písmo */
+        padding: 14px 24px !important; /* Upravený padding pro vertikální centrování */
+        height: 60px !important; /* Fixní výška zajistí, že se pole neořízne */
+        font-size: 1.1rem !important;
+        line-height: 1.5 !important;
         transition: all 0.2s ease-in-out;
     }
     .stTextInput input:focus {
@@ -50,6 +52,7 @@ st.markdown("""
         font-size: 1rem !important;
         transition: all 0.2s ease-in-out !important;
         margin-top: 10px;
+        text-decoration: none !important;
     }
     .stButton button:hover { 
         background-color: #3a3a3c !important; 
