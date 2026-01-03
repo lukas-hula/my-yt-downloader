@@ -136,12 +136,23 @@ if submit_btn and url_input:
             st.write("🎵 **Poslechová ukázka:**")
             st.video(f"https://www.youtube.com/watch?v={video_id}")
             
-            # DRUHÁ ČÁST TABULKY - Služby
+            # SJEDNOCENÁ TABULKA METADAT (iTunes + Technické údaje + Služby)
             spotify_btn = f'<a href="{music_meta["spotify_search"]}" target="_blank" class="service-link spotify">🎧 Spotify</a>' if music_meta else ""
             
+            # Příprava řádků pro iTunes data, pokud existují
+            itunes_rows = ""
+            if music_meta:
+                itunes_rows = f"""
+                    <tr><td class="label-col">Album</td><td>{music_meta['album']}</td></tr>
+                    <tr><td class="label-col">Žánr</td><td>{music_meta['genre']}</td></tr>
+                    <tr><td class="label-col">Rok</td><td>{music_meta['year']}</td></tr>
+                """
+
             st.markdown(f"""
                 <table class="analysis-table">
+                    {itunes_rows}
                     <tr><td class="label-col">Kvalita</td><td>320 kbps (HD)</td></tr>
+                    <tr><td class="label-col">YouTube ID</td><td><code>{video_id}</code></td></tr>
                     <tr>
                         <td class="label-col">Služby</td>
                         <td>
