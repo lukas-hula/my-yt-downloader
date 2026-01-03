@@ -14,17 +14,11 @@ st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
     
-    /* Vynucení světlého pozadí a tmavého písma pro celou aplikaci */
     .stApp { background-color: #ffffff !important; font-family: 'Inter', sans-serif; color: #1d1d1f !important; }
-    
-    .main-card { text-align: center; max-width: 550px; margin: 0 auto; }
-    
-    /* Oprava viditelnosti nadpisů */
     .title-text { font-weight: 800; font-size: 3rem; color: #1d1d1f !important; margin-bottom: 5px; }
     .subtitle-text { color: #86868b !important; font-size: 1.1rem; margin-bottom: 40px; }
-    .history-title { margin-top: 50px; font-weight: 800; font-size: 1.8rem; color: #1d1d1f !important; text-align: left; border-bottom: 2px solid #f5f5f7; padding-bottom: 10px; margin-bottom: 20px; }
-
-    /* FIX OŘÍZNUTÍ: Resetujeme výšku všech obalových divů (včetně .st-bv) */
+    
+    /* FIX OŘÍZNUTÍ INPUTU */
     div[data-testid="stTextInput"] > div,
     div[data-testid="stTextInput"] div {
         height: auto !important;
@@ -33,42 +27,32 @@ st.markdown("""
         background-color: transparent !important;
     }
 
-    /* Vlastní styl inputu */
-    .stTextInput input { 
-        border-radius: 16px !important; 
-        background-color: #f5f5f7 !important; 
+    /* OPRAVA TABULKY HISTORIE - Vynucení světlého vzhledu */
+    [data-testid="stDataFrame"] {
+        background-color: #ffffff !important;
+        border: 1px solid #e5e5e7 !important;
+        border-radius: 15px !important;
+    }
+
+    /* Barva textu v buňkách a hlavičce */
+    [data-testid="stDataFrame"] div[data-testid="stTable"] td, 
+    [data-testid="stDataFrame"] div[data-testid="stTable"] th {
         color: #1d1d1f !important;
-        border: 1px solid #d2d2d7 !important; 
-        padding: 12px 24px !important;
-        height: 60px !important; 
-        font-size: 1.1rem !important;
-        box-shadow: none !important;
+        background-color: #ffffff !important;
     }
 
-    /* Černé tlačítko */
-    .stButton button { 
-        background-color: #1d1d1f !important; color: white !important; 
-        border-radius: 30px !important; width: 100% !important; border: none !important; 
-        padding: 16px 32px !important; font-weight: 600 !important; font-size: 1rem !important;
-        transition: all 0.2s ease-in-out !important; margin-top: 10px;
+    /* Oprava nečitelných ikon v pravém horním rohu tabulky */
+    [data-testid="stDataFrameToolbar"] button {
+        color: #1d1d1f !important;
+        fill: #1d1d1f !important;
     }
-    .stButton button:hover { background-color: #3a3a3c !important; transform: scale(1.01); }
-
-    /* Tabulky metadat */
+    
+    /* Tabulka metadat skladby */
     .analysis-table { width: 100%; border-collapse: collapse; margin: 10px 0; background-color: #f5f5f7; border-radius: 15px; overflow: hidden; }
-    .analysis-table td { padding: 15px 20px; border-bottom: 1px solid #e5e5e7; text-align: left; vertical-align: middle; color: #1d1d1f !important; }
-    .label-col { color: #86868b !important; font-weight: 600; width: 35%; }
-    .mini-thumb { width: 100px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-
-    /* Služby a odkazy */
-    .service-link { display: inline-block; padding: 8px 14px; margin: 2px 4px 2px 0; border-radius: 8px; text-decoration: none !important; font-size: 0.85rem; font-weight: 600; transition: 0.2s; }
-    .chordify { background-color: #eb613d; color: white !important; }
-    .genius { background-color: #ffff64; color: black !important; }
-    .spotify { background-color: #1DB954; color: white !important; }
-    .download-link { display: block; background-color: #0071e3 !important; color: white !important; padding: 18px; border-radius: 15px; text-decoration: none !important; font-weight: 700; margin-top: 15px; text-align: center; font-size: 1.1rem; }
-
-    /* Fix barvy textu v Streamlit DataFrame (Historie) */
-    [data-testid="stDataFrame"] div { color: #1d1d1f !important; }
+    .analysis-table td { padding: 15px 20px; border-bottom: 1px solid #e5e5e7; text-align: left; color: #1d1d1f !important; }
+    
+    /* Tlačítka a ostatní zůstává zafixováno */
+    .stButton button { background-color: #1d1d1f !important; color: white !important; border-radius: 30px !important; padding: 16px 32px !important; font-weight: 600 !important; }
     </style>
     """, unsafe_allow_html=True)
 
