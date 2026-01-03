@@ -1,5 +1,5 @@
 streamlit
+requests
 librosa
 numpy
 soundfile
-pytubefix
