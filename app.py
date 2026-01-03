@@ -9,7 +9,7 @@ import urllib.parse
 # --- KONFIGURACE ---
 st.set_page_config(page_title="AudioFlow Pro", page_icon="🎵", layout="centered")
 
-# --- DESIGN (Návrat k původnímu stylu) ---
+# --- DESIGN (Oprava paddingu tlačítka) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
@@ -18,26 +18,35 @@ st.markdown("""
     .title-text { font-weight: 800; font-size: 3rem; color: #1d1d1f; margin-bottom: 5px; }
     .subtitle-text { color: #86868b; font-size: 1.1rem; margin-bottom: 40px; }
     
+    /* Vylepšené Černé tlačítko s větším paddingem */
+    .stButton button { 
+        background-color: #1d1d1f !important; 
+        color: white !important; 
+        border-radius: 30px !important; /* Více zaoblené */
+        width: 100% !important; 
+        border: none !important; 
+        padding: 16px 32px !important; /* Zvětšený padding (nahoře/dole, vlevo/vpravo) */
+        font-weight: 600 !important;
+        font-size: 1rem !important;
+        letter-spacing: 0.02em !important; /* Rozestup písmen */
+        transition: all 0.2s ease-in-out !important;
+    }
+
+    /* Efekt při najetí myší */
+    .stButton button:hover {
+        background-color: #333333 !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
     /* Tabulka s miniaturou */
     .analysis-table { width: 100%; border-collapse: collapse; margin: 20px 0; background-color: #f5f5f7; border-radius: 15px; overflow: hidden; }
     .analysis-table td { padding: 15px 20px; border-bottom: 1px solid #e5e5e7; text-align: left; vertical-align: middle; }
     .label-col { color: #86868b !important; font-weight: 600; width: 35%; }
     .mini-thumb { width: 80px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
     
-    /* Černé tlačítko */
-    .stButton button { 
-        background-color: #1d1d1f !important; 
-        color: white !important; 
-        border-radius: 25px !important; 
-        width: 100% !important; 
-        border: none !important; 
-        padding: 10px 0 !important;
-        font-weight: 600 !important;
-    }
+    .stTextInput input { border-radius: 12px !important; background-color: #f5f5f7 !important; border: 1px solid #d2d2d7 !important; padding: 12px !important; }
     
-    .stTextInput input { border-radius: 12px !important; background-color: #f5f5f7 !important; border: 1px solid #d2d2d7 !important; }
-    
-    /* Služby a Download */
     .service-link { display: inline-block; padding: 6px 12px; margin: 2px 4px 2px 0; border-radius: 6px; text-decoration: none; font-size: 0.8rem; font-weight: 600; }
     .chordify { background-color: #eb613d; color: white !important; }
     .genius { background-color: #ffff64; color: black !important; }
