@@ -24,41 +24,47 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- FINÁLNÍ ANALYTICKÁ FUNKCE ---
+# --- ANALÝZA HUDBY ---
 def analyze_music(url):
-    temp_file = "full_track.mp3"
+    filename = "complete_song.mp3"
     try:
-        # 1. Stažení CELÉHO souboru (oprava chyby "Could not seek")
-        # Přidáme hlavičky, aby nás server neodmítl
-        headers = {'User-Agent': 'Mozilla/5.0'}
+        # 1. Stažení CELÉHO souboru (žádné zkracování = žádné chyby FFmpeg)
+        # Předstíráme, že jsme prohlížeč, aby nás server neodmítl
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
+        
         response = requests.get(url, headers=headers, stream=True)
         
-        with open(temp_file, "wb") as f:
-            for chunk in response.iter_content(chunk_size=1024 * 1024): # 1MB chunky
+        # Uložení na disk
+        with open(filename, "wb") as f:
+            for chunk in response.iter_content(chunk_size=1024 * 1024):
                 f.write(chunk)
-                
-        # 2. Načtení přímo do Librosa
-        # Díky packages.txt s ffmpegem toto nyní bude fungovat
-        # Načteme jen 30 sekund pro rychlou analýzu, ale ze zdravého souboru
-        y, sr = librosa.load(temp_file, duration=30)
         
-        # 3. Analýza tóniny
+        # Kontrola, zda se soubor stáhl (min. 50kB)
+        file_size = os.path.getsize(filename)
+        if file_size < 50000:
+            return "Chyba stahování", "Soubor je prázdný"
+
+        # 2. Analýza pomocí Librosa
+        # Načteme prvních 60 sekund (z validního souboru to půjde hladce)
+        y, sr = librosa.load(filename, duration=60)
+        
+        # Tónina
         chroma = librosa.feature.chroma_stft(y=y, sr=sr)
         notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
         key = notes[np.argmax(np.mean(chroma, axis=1))]
         
-        # 4. Analýza tempa
+        # Tempo
         tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
         
         return str(key), f"{int(round(float(tempo)))} BPM"
 
     except Exception as e:
-        return "Chyba", str(e) # Vypíše chybu, kdyby něco
+        return "Chyba analýzy", str(e)[:20] # Zkrácená chyba pro debug
     
     finally:
         # Úklid
-        if os.path.exists(temp_file):
-            os.remove(temp_file)
+        if os.path.exists(filename):
+            os.remove(filename)
 
 # --- UI LOGIKA ---
 st.markdown('<div class="main-card">', unsafe_allow_html=True)
@@ -80,14 +86,14 @@ if submit_btn and url_input:
             progress_bar = st.progress(0)
             status_text = st.empty()
             
-            for i in range(1, 15):
-                progress_bar.progress(min(i * 7, 90))
-                status_text.text("Zpracovávám audio na serveru...")
+            for i in range(1, 11):
+                progress_bar.progress(i * 9)
+                status_text.text("Získávám odkaz na audio...")
                 response = requests.get(api_url, headers=headers, params={"id": video_id})
                 data = response.json()
                 
                 if data.get("status") == "ok":
-                    status_text.text("Stahuji a analyzuji (to může chvilku trvat)...")
+                    status_text.text("Stahuji celý soubor pro přesnou analýzu...")
                     tonina, tempo = analyze_music(data.get("link"))
                     
                     progress_bar.progress(100)
@@ -104,9 +110,9 @@ if submit_btn and url_input:
                         <a href="{data.get('link')}" target="_blank" class="download-btn">STÁHNOUT MP3</a>
                     """, unsafe_allow_html=True)
                     break
-                time.sleep(3)
+                time.sleep(2)
         except Exception as e:
-            st.error(f"Kritická chyba: {e}")
+            st.error(f"Chyba: {e}")
     else:
         st.warning("Neplatný odkaz.")
 
