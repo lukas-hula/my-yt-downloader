@@ -26,26 +26,26 @@ st.markdown("""
 
 # --- ANALÝZA HUDBY ---
 def analyze_music(url):
-    filename = "complete_song.mp3"
+    filename = "downloaded_track.mp3"
     try:
-        # 1. Stažení CELÉHO souboru (žádné zkracování = žádné chyby FFmpeg)
-        # Předstíráme, že jsme prohlížeč, aby nás server neodmítl
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
+        # 1. Stažení souboru (BEZ User-Agent hlaviček, které blokovaly stahování)
+        response = requests.get(url, stream=True)
         
-        response = requests.get(url, headers=headers, stream=True)
-        
-        # Uložení na disk
+        # Kontrola, zda server souhlasí (200 OK)
+        if response.status_code != 200:
+            return "Chyba serveru", f"Kód {response.status_code}"
+
         with open(filename, "wb") as f:
             for chunk in response.iter_content(chunk_size=1024 * 1024):
                 f.write(chunk)
         
-        # Kontrola, zda se soubor stáhl (min. 50kB)
+        # Kontrola velikosti (zda není soubor prázdný)
         file_size = os.path.getsize(filename)
-        if file_size < 50000:
-            return "Chyba stahování", "Soubor je prázdný"
+        if file_size < 50000: # Méně než 50kB je podezřelé
+            return "Chyba souboru", f"Staženo jen {file_size} bytů"
 
-        # 2. Analýza pomocí Librosa
-        # Načteme prvních 60 sekund (z validního souboru to půjde hladce)
+        # 2. Analýza pomocí Librosa (načítáme 60s pro jistotu)
+        # Nyní by to mělo projít, protože soubor bude kompletní
         y, sr = librosa.load(filename, duration=60)
         
         # Tónina
@@ -59,7 +59,7 @@ def analyze_music(url):
         return str(key), f"{int(round(float(tempo)))} BPM"
 
     except Exception as e:
-        return "Chyba analýzy", str(e)[:20] # Zkrácená chyba pro debug
+        return "Chyba analýzy", str(e)[:30] # Vypíše kousek chyby
     
     finally:
         # Úklid
@@ -88,12 +88,12 @@ if submit_btn and url_input:
             
             for i in range(1, 11):
                 progress_bar.progress(i * 9)
-                status_text.text("Získávám odkaz na audio...")
+                status_text.text("Komunikuji se serverem...")
                 response = requests.get(api_url, headers=headers, params={"id": video_id})
                 data = response.json()
                 
                 if data.get("status") == "ok":
-                    status_text.text("Stahuji celý soubor pro přesnou analýzu...")
+                    status_text.text("Stahuji a analyzuji...")
                     tonina, tempo = analyze_music(data.get("link"))
                     
                     progress_bar.progress(100)
