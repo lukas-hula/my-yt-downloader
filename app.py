@@ -4,127 +4,142 @@ import time
 
 # --- KONFIGURACE STRÁNKY ---
 st.set_page_config(
-    page_title="AudioFlow Premium",
-    page_icon="🎵",
+    page_title="AudioFlow | Aurora Edition",
+    page_icon="⚡",
     layout="centered"
 )
 
-# --- MODERNÍ DESIGN (CSS) ---
+# --- AURORA UI DESIGN (CSS) ---
 st.markdown("""
     <style>
-    /* Hlavní pozadí s gradientem */
+    /* Celkové pozadí a font */
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap');
+    
     .stApp {
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-        color: #f8fafc;
+        background-color: #050505;
+        font-family: 'Plus Jakarta Sans', sans-serif;
     }
 
-    /* Glassmorphism karta */
+    /* Aurora Glow efekty na pozadí */
+    .stApp::before {
+        content: "";
+        position: fixed;
+        top: -10%;
+        left: -10%;
+        width: 40%;
+        height: 40%;
+        background: radial-gradient(circle, rgba(0, 255, 242, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+        z-index: -1;
+    }
+    
+    .stApp::after {
+        content: "";
+        position: fixed;
+        bottom: -10%;
+        right: -10%;
+        width: 50%;
+        height: 50%;
+        background: radial-gradient(circle, rgba(174, 255, 0, 0.1) 0%, rgba(0, 0, 0, 0) 70%);
+        z-index: -1;
+    }
+
+    /* Minimalistická karta */
     .main-card {
-        background: rgba(255, 255, 255, 0.03);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        padding: 40px;
-        border-radius: 28px;
-        box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-        margin-top: 20px;
+        background: rgba(20, 20, 20, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        padding: 50px;
+        border-radius: 40px;
+        box-shadow: 0 30px 60px rgba(0,0,0,0.8);
+        text-align: center;
     }
 
-    /* Elegantní nadpis */
+    /* Futuristický nadpis */
     .title-text {
-        font-family: 'Inter', sans-serif;
-        background: linear-gradient(90deg, #38bdf8, #818cf8);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        color: #ffffff;
         font-weight: 800;
-        font-size: 3rem;
-        text-align: center;
+        font-size: 3.5rem;
+        letter-spacing: -2px;
         margin-bottom: 0px;
+        text-shadow: 0 0 20px rgba(255,255,255,0.2);
     }
 
     .subtitle-text {
-        color: #94a3b8;
-        text-align: center;
-        font-size: 1.1rem;
-        margin-bottom: 30px;
+        color: #666;
+        font-size: 1rem;
+        margin-bottom: 40px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
     }
 
-    /* Vstupní pole */
+    /* Input pole */
     .stTextInput input {
-        background: rgba(15, 23, 42, 0.5) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        color: white !important;
-        border-radius: 15px !important;
-        padding: 12px 20px !important;
-        font-size: 1rem !important;
-    }
-
-    /* Hlavní tlačítko */
-    .stButton>button {
-        width: 100%;
-        border-radius: 15px;
-        height: 3.5em;
-        background: linear-gradient(90deg, #6366f1, #a855f7);
-        color: white;
-        border: none;
-        font-weight: 700;
-        letter-spacing: 0.5px;
-        transition: all 0.3s ease;
-        margin-top: 10px;
-    }
-
-    .stButton>button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
-        border: none;
-        color: white;
-    }
-
-    /* Tlačítko pro stažení (Zelené) */
-    .download-btn {
-        display: inline-block;
-        width: 100%;
-        text-align: center;
-        background: linear-gradient(90deg, #10b981, #059669);
-        color: white !important;
-        padding: 15px;
-        border-radius: 15px;
-        text-decoration: none;
-        font-weight: 700;
-        box-shadow: 0 10px 15px rgba(16, 185, 129, 0.2);
-        margin-top: 20px;
+        background: #111 !important;
+        border: 2px solid #222 !important;
+        color: #00fff2 !important;
+        border-radius: 20px !important;
+        padding: 15px 25px !important;
         transition: 0.3s;
     }
     
-    .download-btn:hover {
-        transform: scale(1.02);
-        box-shadow: 0 12px 20px rgba(16, 185, 129, 0.3);
+    .stTextInput input:focus {
+        border-color: #00fff2 !important;
+        box-shadow: 0 0 15px rgba(0, 255, 242, 0.2) !important;
     }
 
-    /* Patička */
-    .footer {
-        text-align: center;
-        color: #475569;
-        margin-top: 50px;
-        font-size: 0.9rem;
+    /* Tlačítka */
+    .stButton>button {
+        background: #ffffff;
+        color: #000000;
+        border-radius: 20px;
+        height: 4em;
+        font-weight: 800;
+        border: none;
+        transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .stButton>button:hover {
+        background: #00fff2;
+        transform: scale(1.02);
+        box-shadow: 0 0 30px rgba(0, 255, 242, 0.4);
+    }
+
+    /* Download Button */
+    .download-btn {
+        display: block;
+        background: transparent;
+        border: 2px solid #aeff00;
+        color: #aeff00 !important;
+        padding: 20px;
+        border-radius: 20px;
+        text-decoration: none;
+        font-weight: 800;
+        margin-top: 30px;
+        transition: 0.3s;
+        text-transform: uppercase;
+    }
+
+    .download-btn:hover {
+        background: #aeff00;
+        color: #000 !important;
+        box-shadow: 0 0 30px rgba(174, 255, 0, 0.3);
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- OBSAH STRÁNKY ---
+# --- LAYOUT ---
 st.markdown('<h1 class="title-text">AudioFlow</h1>', unsafe_allow_html=True)
-st.markdown('<p class="subtitle-text">Elegantní převodník z YouTube do vysoké kvality MP3</p>', unsafe_allow_html=True)
+st.markdown('<p class="subtitle-text">Next-Gen Audio Extraction</p>', unsafe_allow_html=True)
 
 with st.container():
     st.markdown('<div class="main-card">', unsafe_allow_html=True)
     
-    url_input = st.text_input("", placeholder="Vložte odkaz (např. https://youtu.be/...)")
-    submit_btn = st.button("GENEROVAT MP3")
+    url_input = st.text_input("", placeholder="Vložte YouTube URL...")
+    submit_btn = st.button("EXTRAKCE AUDIA")
     
     st.markdown('</div>', unsafe_allow_html=True)
 
 # --- LOGIKA ---
 if submit_btn and url_input:
-    # 1. Extrakce ID videa
     video_id = ""
     if "youtu.be/" in url_input:
         video_id = url_input.split("youtu.be/")[1].split("?")[0]
@@ -132,7 +147,7 @@ if submit_btn and url_input:
         video_id = url_input.split("v=")[1].split("&")[0]
     
     if video_id:
-        # Tady vložte svůj API klíč
+        # !!! SEM VLOŽTE SVŮJ KLÍČ !!!
         RAPIDAPI_KEY = "68011bf4f8msh2befeaf67d8207cp1fc142jsndcb8d16ee5f8" 
         
         headers = {
@@ -142,49 +157,36 @@ if submit_btn and url_input:
         params = {"id": video_id}
         api_url = "https://youtube-mp36.p.rapidapi.com/dl"
 
-        status_placeholder = st.empty()
-        progress_bar = st.progress(0)
-
+        status_msg = st.empty()
+        
         try:
             attempts = 0
             while attempts < 10:
-                progress_val = min((attempts + 1) * 10, 95)
-                progress_bar.progress(progress_val)
-                
                 response = requests.get(api_url, headers=headers, params=params)
                 data = response.json()
 
                 if data.get("status") == "ok":
-                    progress_bar.progress(100)
-                    status_placeholder.empty()
-                    st.balloons()
+                    status_msg.empty()
+                    st.success(f"⚡ PŘIPRAVENO: {data.get('title')}")
                     
-                    # Úspěšná karta výsledku
                     st.markdown(f"""
-                        <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; padding: 20px; border-radius: 15px; margin-top: 20px;">
-                            <p style="margin:0; color:#10b981; font-weight:700;">✨ Skladba je připravena!</p>
-                            <p style="margin:5px 0 0 0; color:white; opacity:0.8; font-size:0.9rem;">{data.get('title')}</p>
-                        </div>
                         <a href="{data.get('link')}" target="_blank" class="download-btn">
-                            💾 STÁHNOUT MP3 SOUBOR
+                            ↓ STÁHNOUT MP3
                         </a>
                     """, unsafe_allow_html=True)
+                    st.balloons()
                     break
                 
                 elif data.get("status") == "processing":
-                    status_placeholder.info(f"⏳ Server pracuje na převodu... (pokus {attempts + 1}/10)")
+                    status_msg.warning(f"🚧 Zpracování na serveru... ({attempts + 1}/10)")
                     time.sleep(3)
                     attempts += 1
                 else:
-                    st.error("Chyba: API server neodpovídá správně. Zkuste to za chvíli.")
+                    st.error("API Error. Zkuste to znovu.")
                     break
-            
-            if attempts == 10:
-                st.warning("Zpracování trvá příliš dlouho. Zkuste kliknout na tlačítko znovu za okamžik.")
-
         except Exception as e:
-            st.error(f"⚠️ Došlo k neočekávané chybě: {e}")
+            st.error(f"Chyba: {e}")
     else:
-        st.warning("Uups! Tento odkaz nevypadá jako platný YouTube link.")
+        st.info("Zadejte prosím odkaz.")
 
-st.markdown('<div class="footer">Premium API Edition • 2026</div>', unsafe_allow_html=True)
+st.markdown("<p style='text-align:center; color:#333; margin-top:50px;'>2026 // AURORA TERMINAL</p>", unsafe_allow_html=True)
