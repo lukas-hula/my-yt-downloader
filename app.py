@@ -9,7 +9,7 @@ import urllib.parse
 # --- KONFIGURACE ---
 st.set_page_config(page_title="AudioFlow Pro", page_icon="🎵", layout="centered")
 
-# --- DESIGN (Apple Look Hover efekty) ---
+# --- DESIGN (Zvětšený input a Apple Look) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
@@ -23,8 +23,20 @@ st.markdown("""
     .label-col { color: #86868b !important; font-weight: 600; width: 35%; }
     .mini-thumb { width: 100px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
     
-    /* Vstupní pole */
-    .stTextInput input { border-radius: 12px !important; background-color: #f5f5f7 !important; border: 1px solid #d2d2d7 !important; padding: 12px !important; }
+    /* ZVĚTŠENÝ VSTUPNÍ POLE (Input) */
+    .stTextInput input { 
+        border-radius: 16px !important; 
+        background-color: #f5f5f7 !important; 
+        border: 1px solid #d2d2d7 !important; 
+        padding: 20px 24px !important; /* Výrazně větší padding */
+        font-size: 1.2rem !important; /* Větší písmo */
+        transition: all 0.2s ease-in-out;
+    }
+    .stTextInput input:focus {
+        border-color: #0071e3 !important;
+        background-color: #ffffff !important;
+        box-shadow: 0 0 0 4px rgba(0,113,227,0.1) !important;
+    }
     
     /* Černé tlačítko - Apple Look Hover */
     .stButton button { 
@@ -37,6 +49,7 @@ st.markdown("""
         font-weight: 600 !important; 
         font-size: 1rem !important;
         transition: all 0.2s ease-in-out !important;
+        margin-top: 10px;
     }
     .stButton button:hover { 
         background-color: #3a3a3c !important; 
@@ -56,16 +69,9 @@ st.markdown("""
     
     /* Modré tlačítko ke stažení - Apple Look Hover */
     .download-link { 
-        display: block; 
-        background-color: #0071e3 !important; 
-        color: white !important; 
-        padding: 18px; 
-        border-radius: 15px; 
-        text-decoration: none !important; 
-        font-weight: 700; 
-        margin-top: 15px; 
-        text-align: center; 
-        font-size: 1.1rem;
+        display: block; background-color: #0071e3 !important; color: white !important; 
+        padding: 18px; border-radius: 15px; text-decoration: none !important; 
+        font-weight: 700; margin-top: 15px; text-align: center; font-size: 1.1rem;
         transition: all 0.2s ease-in-out;
     }
     .download-link:hover { 
@@ -114,17 +120,14 @@ if submit_btn and url_input:
                 dur = api_data.get("duration", 0)
                 duration_str = f"{int(dur // 60)}m {int(dur % 60):02d}s"
 
-            # 1. Část: Náhled a název
             st.markdown(f'<table class="analysis-table"><tr><td class="label-col">Skladba</td><td><img src="https://img.youtube.com/vi/{video_id}/mqdefault.jpg" class="mini-thumb"><br><strong>{title}</strong></td></tr><tr><td class="label-col">Délka</td><td>{duration_str}</td></tr></table>', unsafe_allow_html=True)
             
             st.video(f"https://www.youtube.com/watch?v={video_id}")
 
-            # 2. Část: iTunes data
             itunes_rows = ""
             if music_meta:
-                itunes_rows = f'<tr><td class="label-col">Album</td><td>{music_meta["album"]}</td></tr><tr><td class="label-col">Žánr</td><td>{music_meta['genre']}</td></tr><tr><td class="label-col">Rok</td><td>{music_meta['year']}</td></tr>'
+                itunes_rows = f'<tr><td class="label-col">Album</td><td>{music_meta["album"]}</td></tr><tr><td class="label-col">Žánr</td><td>{music_meta["genre"]}</td></tr><tr><td class="label-col">Rok</td><td>{music_meta["year"]}</td></tr>'
 
-            # 3. Část: Sjednocená metadata a služby
             search_query = urllib.parse.quote(title)
             st.markdown(f'<table class="analysis-table">{itunes_rows}<tr><td class="label-col">Kvalita</td><td>320 kbps (HD)</td></tr><tr><td class="label-col">YouTube ID</td><td><code>{video_id}</code></td></tr><tr><td class="label-col">Služby</td><td><a href="https://chordify.net/search/{search_query}" target="_blank" class="service-link chordify">🎸 Akordy</a><a href="https://genius.com/search?q={search_query}" target="_blank" class="service-link genius">📝 Text</a><a href="https://open.spotify.com/search/{search_query}" target="_blank" class="service-link spotify">🎧 Spotify</a></td></tr></table>', unsafe_allow_html=True)
             
