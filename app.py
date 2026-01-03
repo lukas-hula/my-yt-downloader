@@ -1,5 +1,6 @@
 import streamlit as st
-import yt_dlp
+from pytubefix import YouTube
+from pytubefix.cli import on_progress
 import librosa
 import numpy as np
 import os
@@ -23,7 +24,7 @@ st.markdown("""
     .stTextInput input { border-radius: 12px !important; background-color: #f5f5f7 !important; border: 1px solid #d2d2d7 !important; padding: 12px !important; }
     .stButton button { background-color: #1d1d1f !important; color: white !important; border-radius: 20px !important; width: 100% !important; font-weight: 600 !important; }
     
-    /* Vlastní styl pro stahovací tlačítko Streamlitu */
+    /* Vlastní styl pro stahovací tlačítko */
     .stDownloadButton button {
         background-color: #0071e3 !important;
         color: white !important;
@@ -39,35 +40,24 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- HLAVNÍ FUNKCE ---
+# --- FUNKCE PRO ZPRACOVÁNÍ ---
 def process_video(url):
-    output_filename = "song.mp3"
+    output_filename = "audio.mp3"
     
-    # 1. Nastavení yt-dlp pro stažení MP3
-    ydl_opts = {
-        'format': 'bestaudio/best',
-        'outtmpl': 'song',  # Jméno bez přípony
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',
-            'preferredquality': '192',
-        }],
-        'quiet': True,
-        'noplaylist': True,
-    }
-
     try:
-        # Stažení
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=True)
-            title = info.get('title', 'Neznámá skladba')
-            duration = info.get('duration', 0)
+        # 1. Stažení pomocí Pytubefix (obchází 403 blokády)
+        yt = YouTube(url, on_progress_callback=on_progress)
+        title = yt.title
+        duration = yt.length
         
-        # Ověření, že soubor existuje (yt-dlp automaticky přidá .mp3)
-        if not os.path.exists(output_filename):
-            return None, "Chyba při konverzi souboru."
-
+        # Získáme pouze audio stream
+        ys = yt.streams.get_audio_only()
+        
+        # Stažení souboru (uloží se jako audio.mp3)
+        ys.download(filename=output_filename)
+        
         # 2. Hudební analýza (Librosa)
+        # Načteme prvních 60 sekund
         y, sr = librosa.load(output_filename, duration=60)
         
         # Tónina
@@ -79,7 +69,6 @@ def process_video(url):
         tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
         tempo_val = int(round(float(tempo)))
 
-        # Data pro tabulku
         stats = {
             "title": title,
             "key": key,
@@ -101,16 +90,17 @@ url_input = st.text_input("", placeholder="Vložte YouTube odkaz...")
 process_btn = st.button("Zpracovat skladbu")
 
 if process_btn and url_input:
+    # Čištění starých souborů
+    if os.path.exists("audio.mp3"):
+        os.remove("audio.mp3")
+
     if "youtu" in url_input:
-        with st.spinner("⏳ Stahuji audio a provádím analýzu..."):
-            # Smazání starého souboru před novým pokusem
-            if os.path.exists("song.mp3"):
-                os.remove("song.mp3")
-                
+        with st.spinner("⏳ Stahuji data a analyzuji... (Pytubefix)"):
             stats, error = process_video(url_input)
             
             if error:
                 st.error(f"Chyba: {error}")
+                st.info("Tip: Zkuste odkaz vložit znovu za chvíli.")
             else:
                 st.balloons()
                 
@@ -124,8 +114,8 @@ if process_btn and url_input:
                     </table>
                 """, unsafe_allow_html=True)
                 
-                # Přímé tlačítko pro stažení souboru ze serveru k uživateli
-                with open("song.mp3", "rb") as file:
+                # Tlačítko pro stažení
+                with open("audio.mp3", "rb") as file:
                     st.download_button(
                         label="💾 ULOŽIT MP3 DO POČÍTAČE",
                         data=file,
