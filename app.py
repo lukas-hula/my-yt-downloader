@@ -9,7 +9,7 @@ import urllib.parse
 # --- KONFIGURACE ---
 st.set_page_config(page_title="AudioFlow Pro", page_icon="🎵", layout="centered")
 
-# --- KOMPLETNÍ OPRAVA DESIGNU (Light Mode & Fix oříznutí) ---
+# --- KOMPLETNÍ OPRAVA DESIGNU (Light Mode, Fix oříznutí & Hover efekty) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
@@ -45,7 +45,7 @@ st.markdown("""
         box-shadow: none !important;
     }
 
-    /* Černé tlačítko */
+    /* Černé tlačítko PŘIPRAVIT MP3 */
     .stButton button { 
         background-color: #1d1d1f !important; color: white !important; 
         border-radius: 30px !important; width: 100% !important; border: none !important; 
@@ -60,12 +60,45 @@ st.markdown("""
     .label-col { color: #86868b !important; font-weight: 600; width: 35%; }
     .mini-thumb { width: 100px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
 
-    /* Služby a odkazy */
-    .service-link { display: inline-block; padding: 8px 14px; margin: 2px 4px 2px 0; border-radius: 8px; text-decoration: none !important; font-size: 0.85rem; font-weight: 600; transition: 0.2s; }
+    /* Služby a odkazy (Text, Akordy, Spotify) */
+    .service-link { 
+        display: inline-block; 
+        padding: 8px 14px; 
+        margin: 2px 4px 2px 0; 
+        border-radius: 8px; 
+        text-decoration: none !important; 
+        font-size: 0.85rem; 
+        font-weight: 600; 
+        transition: 0.2s ease-in-out; 
+    }
     .chordify { background-color: #eb613d; color: white !important; }
     .genius { background-color: #ffff64; color: black !important; }
     .spotify { background-color: #1DB954; color: white !important; }
-    .download-link { display: block; background-color: #0071e3 !important; color: white !important; padding: 18px; border-radius: 15px; text-decoration: none !important; font-weight: 700; margin-top: 15px; text-align: center; font-size: 1.1rem; }
+    
+    /* Hover efekt pro služby */
+    .service-link:hover { opacity: 0.85; transform: translateY(-1px); }
+
+    /* Modré tlačítko STÁHNOUT SOUBOR */
+    .download-link { 
+        display: block; 
+        background-color: #0071e3 !important; 
+        color: white !important; 
+        padding: 18px; 
+        border-radius: 15px; 
+        text-decoration: none !important; 
+        font-weight: 700; 
+        margin-top: 15px; 
+        text-align: center; 
+        font-size: 1.1rem; 
+        transition: all 0.2s ease-in-out;
+    }
+    
+    /* Hover efekt pro modré tlačítko */
+    .download-link:hover { 
+        background-color: #005bb7 !important; 
+        box-shadow: 0 5px 15px rgba(0,113,227,0.3);
+        transform: translateY(-1px);
+    }
 
     /* Fix barvy textu v Streamlit DataFrame (Historie) */
     [data-testid="stDataFrame"] div { color: #1d1d1f !important; }
