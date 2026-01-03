@@ -3,10 +3,9 @@ import requests
 import time
 import librosa
 import numpy as np
-import io
-import soundfile as sf
+import os
 
-# --- KONFIGURACE A DESIGN (Zůstává stejné, zkráceno pro přehlednost) ---
+# --- KONFIGURACE A DESIGN (Zůstává stejné) ---
 st.set_page_config(page_title="AudioFlow", page_icon="🎵", layout="centered")
 st.markdown("""
     <style>
@@ -15,37 +14,47 @@ st.markdown("""
     header {visibility: hidden;}
     .stApp { background-color: #ffffff; font-family: 'Inter', sans-serif; }
     .main-card { text-align: center; max-width: 550px; margin: 0 auto; }
-    .title-text { font-weight: 800; font-size: 2.8rem; color: #1d1d1f; margin-bottom: 0px; }
+    .title-text { font-weight: 800; font-size: 2.8rem; letter-spacing: -0.05em; color: #1d1d1f; margin-bottom: 0px; }
     .subtitle-text { color: #86868b; font-size: 1.1rem; margin-bottom: 30px; }
-    .analysis-table { width: 100%; border-collapse: collapse; margin: 25px 0; background-color: #f5f5f7; border-radius: 15px; overflow: hidden; }
-    .analysis-table td { padding: 15px 20px; border-bottom: 1px solid #e5e5e7; text-align: left; }
-    .stButton button { background-color: #1d1d1f !important; color: white !important; border-radius: 20px !important; width: 100% !important; }
+    .analysis-table { width: 100%; border-collapse: collapse; margin: 25px 0; font-size: 0.95rem; border-radius: 15px; overflow: hidden; background-color: #f5f5f7; }
+    .analysis-table td { padding: 15px 20px; border-bottom: 1px solid #e5e5e7; text-align: left; color: #1d1d1f; }
+    .analysis-table td:first-child { color: #86868b; font-weight: 600; width: 40%; }
+    .stTextInput input { border-radius: 12px !important; background-color: #f5f5f7 !important; border: 1px solid #d2d2d7 !important; padding: 12px !important; }
+    .stButton button { background-color: #1d1d1f !important; color: white !important; border-radius: 20px !important; padding: 10px 40px !important; font-weight: 600 !important; width: 100% !important; border: none !important; }
     .download-btn { display: block; background-color: #0071e3; color: white !important; padding: 15px; border-radius: 12px; text-decoration: none; font-weight: 600; margin-top: 10px; text-align: center; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- FINÁLNÍ ANALYTICKÁ FUNKCE BEZ PYDUB ---
+# --- NEPRŮSTŘELNÁ ANALÝZA PŘES DISK ---
 def analyze_music(url):
+    temp_file = "temp_analysis.mp3"
     try:
-        # Stažení prvních 2MB souboru
-        response = requests.get(url, timeout=15)
-        audio_stream = io.BytesIO(response.content)
+        # 1. Stažení souboru na disk (jen první 3MB stačí)
+        response = requests.get(url, stream=True, timeout=20)
+        with open(temp_file, "wb") as f:
+            for chunk in response.iter_content(chunk_size=1024):
+                f.write(chunk)
+                if os.path.getsize(temp_file) > 3000000: # 3MB limit
+                    break
         
-        # Načtení přímo do librosa přes soundfile backend
-        # To je v cloudovém Streamlitu nejstabilnější cesta
-        y, sr = librosa.load(audio_stream, duration=30)
+        # 2. Načtení z disku do librosa (použije ffmpeg v systému)
+        y, sr = librosa.load(temp_file, duration=30)
         
-        # Analýza tóniny
+        # 3. Analýza tóniny
         chroma = librosa.feature.chroma_stft(y=y, sr=sr)
         notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
         key = notes[np.argmax(np.mean(chroma, axis=1))]
         
-        # Analýza tempa
+        # 4. Analýza tempa
         tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
         
         return str(key), f"{int(round(float(tempo)))} BPM"
     except Exception as e:
-        return "Nezjištěno", "Nezjištěno"
+        return "Nezjištěno", f"Chyba: {str(e)[:15]}"
+    finally:
+        # Smazání souboru po analýze
+        if os.path.exists(temp_file):
+            os.remove(temp_file)
 
 # --- UI STRUKTURA ---
 st.markdown('<div class="main-card">', unsafe_allow_html=True)
@@ -73,17 +82,17 @@ if submit_btn and url_input:
                 data = response.json()
                 
                 if data.get("status") == "ok":
-                    status_text.text("Provádím hudební analýzu...")
+                    status_text.text("Provádím hloubkovou analýzu hudby...")
                     tonina, tempo = analyze_music(data.get("link"))
                     progress_bar.progress(100)
                     status_text.empty()
                     st.balloons()
                     st.markdown(f"""
                         <table class="analysis-table">
-                            <tr><td style="color:#86868b; font-weight:600;">Název skladby</td><td>{data.get('title')}</td></tr>
-                            <tr><td style="color:#86868b; font-weight:600;">Tónina</td><td>{tonina}</td></tr>
-                            <tr><td style="color:#86868b; font-weight:600;">Tempo</td><td>{tempo}</td></tr>
-                            <tr><td style="color:#86868b; font-weight:600;">Délka</td><td>{int(data.get('duration') // 60)}m {int(data.get('duration') % 60)}s</td></tr>
+                            <tr><td>Název skladby</td><td>{data.get('title')}</td></tr>
+                            <tr><td>Tónina</td><td>{tonina}</td></tr>
+                            <tr><td>Tempo</td><td>{tempo}</td></tr>
+                            <tr><td>Délka</td><td>{int(data.get('duration') // 60)}m {int(data.get('duration') % 60)}s</td></tr>
                         </table>
                         <a href="{data.get('link')}" target="_blank" class="download-btn">STÁHNOUT MP3</a>
                     """, unsafe_allow_html=True)
