@@ -9,51 +9,43 @@ import urllib.parse
 # --- KONFIGURACE ---
 st.set_page_config(page_title="AudioFlow Pro", page_icon="🎵", layout="centered")
 
-# --- DESIGN (Fix oříznutí přes obalové DIVy) ---
+# --- KOMPLETNÍ OPRAVA DESIGNU (Light Mode & Fix oříznutí) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
-    .stApp { background-color: #ffffff; font-family: 'Inter', sans-serif; }
-    .main-card { text-align: center; max-width: 550px; margin: 0 auto; }
-    .title-text { font-weight: 800; font-size: 3rem; color: #1d1d1f; margin-bottom: 5px; }
-    .subtitle-text { color: #86868b; font-size: 1.1rem; margin-bottom: 40px; }
     
-    /* FIX OŘÍZNUTÍ: Cílíme na obalové prvky Streamlitu */
-    div[data-testid="stTextInput"] > div {
+    /* Vynucení světlého pozadí a tmavého písma pro celou aplikaci */
+    .stApp { background-color: #ffffff !important; font-family: 'Inter', sans-serif; color: #1d1d1f !important; }
+    
+    .main-card { text-align: center; max-width: 550px; margin: 0 auto; }
+    
+    /* Oprava viditelnosti nadpisů */
+    .title-text { font-weight: 800; font-size: 3rem; color: #1d1d1f !important; margin-bottom: 5px; }
+    .subtitle-text { color: #86868b !important; font-size: 1.1rem; margin-bottom: 40px; }
+    .history-title { margin-top: 50px; font-weight: 800; font-size: 1.8rem; color: #1d1d1f !important; text-align: left; border-bottom: 2px solid #f5f5f7; padding-bottom: 10px; margin-bottom: 20px; }
+
+    /* FIX OŘÍZNUTÍ: Resetujeme výšku všech obalových divů (včetně .st-bv) */
+    div[data-testid="stTextInput"] > div,
+    div[data-testid="stTextInput"] div {
         height: auto !important;
-        min-height: 60px !important;
+        min-height: unset !important;
+        max-height: unset !important;
+        background-color: transparent !important;
     }
 
-    div[data-testid="stTextInput"] fieldset {
-        border: none !important;
-    }
-
-    /* VLASTNÍ STYL INPUTU */
+    /* Vlastní styl inputu */
     .stTextInput input { 
         border-radius: 16px !important; 
         background-color: #f5f5f7 !important; 
+        color: #1d1d1f !important;
         border: 1px solid #d2d2d7 !important; 
         padding: 12px 24px !important;
         height: 60px !important; 
         font-size: 1.1rem !important;
-        line-height: 1.5 !important;
-        box-sizing: border-box !important;
-        transition: all 0.2s ease-in-out;
+        box-shadow: none !important;
     }
 
-    .stTextInput input:focus {
-        border-color: #0071e3 !important;
-        background-color: #ffffff !important;
-        box-shadow: 0 0 0 4px rgba(0,113,227,0.1) !important;
-        outline: none !important;
-    }
-    
-    /* Design tabulek a tlačítek zůstává zafixován */
-    .analysis-table { width: 100%; border-collapse: collapse; margin: 10px 0; background-color: #f5f5f7; border-radius: 15px; overflow: hidden; }
-    .analysis-table td { padding: 15px 20px; border-bottom: 1px solid #e5e5e7; text-align: left; vertical-align: middle; }
-    .label-col { color: #86868b !important; font-weight: 600; width: 35%; }
-    .mini-thumb { width: 100px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-    
+    /* Černé tlačítko */
     .stButton button { 
         background-color: #1d1d1f !important; color: white !important; 
         border-radius: 30px !important; width: 100% !important; border: none !important; 
@@ -61,19 +53,26 @@ st.markdown("""
         transition: all 0.2s ease-in-out !important; margin-top: 10px;
     }
     .stButton button:hover { background-color: #3a3a3c !important; transform: scale(1.01); }
-    
+
+    /* Tabulky metadat */
+    .analysis-table { width: 100%; border-collapse: collapse; margin: 10px 0; background-color: #f5f5f7; border-radius: 15px; overflow: hidden; }
+    .analysis-table td { padding: 15px 20px; border-bottom: 1px solid #e5e5e7; text-align: left; vertical-align: middle; color: #1d1d1f !important; }
+    .label-col { color: #86868b !important; font-weight: 600; width: 35%; }
+    .mini-thumb { width: 100px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+
+    /* Služby a odkazy */
     .service-link { display: inline-block; padding: 8px 14px; margin: 2px 4px 2px 0; border-radius: 8px; text-decoration: none !important; font-size: 0.85rem; font-weight: 600; transition: 0.2s; }
     .chordify { background-color: #eb613d; color: white !important; }
     .genius { background-color: #ffff64; color: black !important; }
     .spotify { background-color: #1DB954; color: white !important; }
-    
-    .download-link { display: block; background-color: #0071e3 !important; color: white !important; padding: 18px; border-radius: 15px; text-decoration: none !important; font-weight: 700; margin-top: 15px; text-align: center; font-size: 1.1rem; transition: all 0.2s ease-in-out; }
-    .download-link:hover { background-color: #005bb7 !important; box-shadow: 0 5px 15px rgba(0,113,227,0.3); transform: translateY(-1px); }
-    
-    .history-title { margin-top: 50px; font-weight: 800; font-size: 1.8rem; color: #1d1d1f; text-align: left; border-bottom: 2px solid #f5f5f7; padding-bottom: 10px; margin-bottom: 20px; }
+    .download-link { display: block; background-color: #0071e3 !important; color: white !important; padding: 18px; border-radius: 15px; text-decoration: none !important; font-weight: 700; margin-top: 15px; text-align: center; font-size: 1.1rem; }
+
+    /* Fix barvy textu v Streamlit DataFrame (Historie) */
+    [data-testid="stDataFrame"] div { color: #1d1d1f !important; }
     </style>
     """, unsafe_allow_html=True)
 
+# --- FUNKCE ---
 def get_itunes_meta(query):
     try:
         url = f"https://itunes.apple.com/search?term={urllib.parse.quote(query)}&entity=song&limit=1"
@@ -90,7 +89,7 @@ def log_to_csv(title, video_id, duration_str):
     if not os.path.isfile(log_file): new_data.to_csv(log_file, index=False, encoding='utf-8-sig')
     else: new_data.to_csv(log_file, mode='a', index=False, header=False, encoding='utf-8-sig')
 
-# --- UI ---
+# --- HLAVNÍ STRÁNKA ---
 st.markdown('<div class="main-card"><h1 class="title-text">AudioFlow</h1><p class="subtitle-text">Hudební nástroj nové generace</p>', unsafe_allow_html=True)
 url_input = st.text_input("", placeholder="Vložte YouTube odkaz...")
 submit_btn = st.button("PŘIPRAVIT MP3")
@@ -111,7 +110,6 @@ if submit_btn and url_input:
                 duration_str = f"{int(dur // 60)}m {int(dur % 60):02d}s"
 
             st.markdown(f'<table class="analysis-table"><tr><td class="label-col">Skladba</td><td><img src="https://img.youtube.com/vi/{video_id}/mqdefault.jpg" class="mini-thumb"><br><strong>{title}</strong></td></tr><tr><td class="label-col">Délka</td><td>{duration_str}</td></tr></table>', unsafe_allow_html=True)
-            
             st.video(f"https://www.youtube.com/watch?v={video_id}")
 
             itunes_rows = ""
@@ -128,6 +126,9 @@ if submit_btn and url_input:
         except: st.error("Chyba při zpracování.")
 st.markdown('</div>', unsafe_allow_html=True)
 
+# --- HISTORIE ---
 st.markdown('<div class="history-title">Historie stažení</div>', unsafe_allow_html=True)
-if os.path.isfile("history.csv"): st.dataframe(pd.read_csv("history.csv").sort_index(ascending=False), use_container_width=True, hide_index=True)
+if os.path.isfile("history.csv"): 
+    df = pd.read_csv("history.csv").sort_index(ascending=False)
+    st.dataframe(df, use_container_width=True, hide_index=True)
 else: st.info("Historie je prázdná.")
