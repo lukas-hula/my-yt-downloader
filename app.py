@@ -1,6 +1,5 @@
 import streamlit as st
-from pytubefix import YouTube
-from pytubefix.cli import on_progress
+import requests
 import librosa
 import numpy as np
 import os
@@ -9,7 +8,7 @@ import time
 # --- KONFIGURACE STRÁNKY ---
 st.set_page_config(page_title="AudioFlow Pro", page_icon="🎵", layout="centered")
 
-# --- DESIGN ---
+# --- DESIGN (Zůstává stejný) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
@@ -24,105 +23,131 @@ st.markdown("""
     .stTextInput input { border-radius: 12px !important; background-color: #f5f5f7 !important; border: 1px solid #d2d2d7 !important; padding: 12px !important; }
     .stButton button { background-color: #1d1d1f !important; color: white !important; border-radius: 20px !important; width: 100% !important; font-weight: 600 !important; }
     
-    /* Vlastní styl pro stahovací tlačítko */
     .stDownloadButton button {
-        background-color: #0071e3 !important;
-        color: white !important;
-        border-radius: 12px !important;
-        padding: 15px !important;
-        font-weight: 600 !important;
-        width: 100% !important;
-        border: none !important;
+        background-color: #0071e3 !important; color: white !important;
+        border-radius: 12px !important; padding: 15px !important;
+        font-weight: 600 !important; width: 100% !important; border: none !important;
     }
-    .stDownloadButton button:hover {
-        background-color: #0077ed !important;
-    }
+    .stDownloadButton button:hover { background-color: #0077ed !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- FUNKCE PRO ZPRACOVÁNÍ ---
-def process_video(url):
-    output_filename = "audio.mp3"
+# --- FUNKCE: ZÍSKÁNÍ ODKAZU PŘES COBALT ---
+def get_stream_url(video_url):
+    # Použijeme veřejnou instanci Cobalt API
+    api_url = "https://api.cobalt.tools/api/json"
+    
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
+    
+    payload = {
+        "url": video_url,
+        "isAudioOnly": True,
+        "aFormat": "mp3"
+    }
     
     try:
-        # 1. Stažení pomocí Pytubefix (obchází 403 blokády)
-        yt = YouTube(url, on_progress_callback=on_progress)
-        title = yt.title
-        duration = yt.length
+        response = requests.post(api_url, json=payload, headers=headers)
+        data = response.json()
         
-        # Získáme pouze audio stream
-        ys = yt.streams.get_audio_only()
+        if "url" in data:
+            return data["url"]
+        else:
+            return None
+    except:
+        return None
+
+# --- HLAVNÍ PROCES ---
+def process_audio(direct_url):
+    filename = "downloaded_song.mp3"
+    try:
+        # 1. Stažení souboru z Cobaltu
+        # Tady už blokace nehrozí, protože stahujeme z jejich CDN, ne z YouTube
+        with requests.get(direct_url, stream=True) as r:
+            r.raise_for_status()
+            with open(filename, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=1024 * 1024):
+                    f.write(chunk)
         
-        # Stažení souboru (uloží se jako audio.mp3)
-        ys.download(filename=output_filename)
+        # Ověření velikosti
+        if os.path.getsize(filename) < 50000:
+            return None, "Chyba: Stažený soubor je prázdný."
+
+        # 2. Analýza (Librosa)
+        y, sr = librosa.load(filename, duration=60)
         
-        # 2. Hudební analýza (Librosa)
-        # Načteme prvních 60 sekund
-        y, sr = librosa.load(output_filename, duration=60)
-        
-        # Tónina
         chroma = librosa.feature.chroma_stft(y=y, sr=sr)
         notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
         key = notes[np.argmax(np.mean(chroma, axis=1))]
         
-        # Tempo
         tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
-        tempo_val = int(round(float(tempo)))
-
-        stats = {
-            "title": title,
-            "key": key,
-            "tempo": f"{tempo_val} BPM",
-            "duration": f"{int(duration // 60)}m {int(duration % 60)}s"
-        }
         
+        # Zjistíme délku ze souboru
+        duration = librosa.get_duration(y=y, sr=sr)
+        
+        stats = {
+            "key": key,
+            "tempo": f"{int(round(float(tempo)))} BPM",
+            "duration": "Analýza vzorku hotova"
+        }
         return stats, None
 
     except Exception as e:
         return None, str(e)
+    finally:
+        # Soubor nemažeme hned, aby si ho uživatel mohl stáhnout
+        pass
 
 # --- UI LOGIKA ---
 st.markdown('<div class="main-card">', unsafe_allow_html=True)
 st.markdown('<h1 class="title-text">AudioFlow</h1>', unsafe_allow_html=True)
-st.markdown('<p class="subtitle-text">Profesionální extrakce a analýza</p>', unsafe_allow_html=True)
+st.markdown('<p class="subtitle-text">Bypass Edition</p>', unsafe_allow_html=True)
 
 url_input = st.text_input("", placeholder="Vložte YouTube odkaz...")
 process_btn = st.button("Zpracovat skladbu")
 
 if process_btn and url_input:
-    # Čištění starých souborů
-    if os.path.exists("audio.mp3"):
-        os.remove("audio.mp3")
+    # Úklid předchozích souborů
+    if os.path.exists("downloaded_song.mp3"):
+        os.remove("downloaded_song.mp3")
 
     if "youtu" in url_input:
-        with st.spinner("⏳ Stahuji data a analyzuji... (Pytubefix)"):
-            stats, error = process_video(url_input)
+        with st.spinner("🔄 Připojuji se k externímu serveru..."):
+            # 1. Získání odkazu
+            stream_url = get_stream_url(url_input)
             
-            if error:
-                st.error(f"Chyba: {error}")
-                st.info("Tip: Zkuste odkaz vložit znovu za chvíli.")
+            if stream_url:
+                # 2. Stažení a analýza
+                stats, error = process_audio(stream_url)
+                
+                if error:
+                    st.error(f"Chyba při analýze: {error}")
+                else:
+                    st.balloons()
+                    
+                    st.markdown(f"""
+                        <table class="analysis-table">
+                            <tr><td style="color:#86868b; font-weight:600;">Odkaz</td><td>Úspěšně zpracován</td></tr>
+                            <tr><td style="color:#86868b; font-weight:600;">Tónina</td><td><b>{stats['key']}</b></td></tr>
+                            <tr><td style="color:#86868b; font-weight:600;">Tempo</td><td>{stats['tempo']}</td></tr>
+                        </table>
+                    """, unsafe_allow_html=True)
+                    
+                    # Tlačítko pro stažení
+                    if os.path.exists("downloaded_song.mp3"):
+                        with open("downloaded_song.mp3", "rb") as file:
+                            st.download_button(
+                                label="💾 ULOŽIT MP3 DO POČÍTAČE",
+                                data=file,
+                                file_name="audioflow_track.mp3",
+                                mime="audio/mpeg"
+                            )
             else:
-                st.balloons()
-                
-                # Tabulka výsledků
-                st.markdown(f"""
-                    <table class="analysis-table">
-                        <tr><td style="color:#86868b; font-weight:600;">Skladba</td><td>{stats['title']}</td></tr>
-                        <tr><td style="color:#86868b; font-weight:600;">Tónina</td><td><b>{stats['key']}</b></td></tr>
-                        <tr><td style="color:#86868b; font-weight:600;">Tempo</td><td>{stats['tempo']}</td></tr>
-                        <tr><td style="color:#86868b; font-weight:600;">Délka</td><td>{stats['duration']}</td></tr>
-                    </table>
-                """, unsafe_allow_html=True)
-                
-                # Tlačítko pro stažení
-                with open("audio.mp3", "rb") as file:
-                    st.download_button(
-                        label="💾 ULOŽIT MP3 DO POČÍTAČE",
-                        data=file,
-                        file_name=f"{stats['title']}.mp3",
-                        mime="audio/mpeg"
-                    )
+                st.error("Nepodařilo se získat stream. Zkuste to za chvíli nebo s jiným videem.")
     else:
-        st.warning("Prosím vložte platný odkaz na YouTube.")
+        st.warning("Vložte platný odkaz.")
 
 st.markdown('</div>', unsafe_allow_html=True)
