@@ -1,2 +1,5 @@
 streamlit
 requests
+librosa
+numpy
+soundfile
