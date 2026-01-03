@@ -1,6 +1,9 @@
 import streamlit as st
 import requests
 import time
+import librosa
+import numpy as np
+import io
 
 # --- KONFIGURACE STRÁNKY ---
 st.set_page_config(
@@ -9,92 +12,100 @@ st.set_page_config(
     layout="centered"
 )
 
-# --- ČISTÝ DESIGN (OPRAVA MEZER) ---
+# --- ČISTÝ DESIGN ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
     
-    /* Odstranění prázdného místa nahoře */
-    .block-container {
-        padding-top: 2rem !important;
-    }
+    .block-container { padding-top: 2rem !important; }
     header {visibility: hidden;}
     
-    .stApp {
-        background-color: #ffffff;
-        font-family: 'Inter', sans-serif;
-    }
+    .stApp { background-color: #ffffff; font-family: 'Inter', sans-serif; }
 
-    .main-card {
-        text-align: center;
-        max-width: 500px;
-        margin: 0 auto;
-    }
+    .main-card { text-align: center; max-width: 550px; margin: 0 auto; }
 
     .title-text {
-        font-weight: 800;
-        font-size: 2.8rem;
-        letter-spacing: -0.05em;
-        color: #1d1d1f;
-        margin-bottom: 0px;
+        font-weight: 800; font-size: 2.8rem; letter-spacing: -0.05em;
+        color: #1d1d1f; margin-bottom: 0px;
     }
 
-    .subtitle-text {
-        color: #86868b;
-        font-size: 1.1rem;
-        margin-bottom: 30px;
-    }
+    .subtitle-text { color: #86868b; font-size: 1.1rem; margin-bottom: 30px; }
 
-    /* Elegantní input a tlačítko */
+    /* Elegantní tabulka */
+    .analysis-table {
+        width: 100%; border-collapse: collapse; margin: 25px 0;
+        font-size: 0.95rem; border-radius: 15px; overflow: hidden;
+        background-color: #f5f5f7;
+    }
+    .analysis-table td {
+        padding: 15px 20px; border-bottom: 1px solid #e5e5e7;
+        text-align: left; color: #1d1d1f;
+    }
+    .analysis-table td:first-child { color: #86868b; font-weight: 600; width: 40%; }
+
     .stTextInput input {
-        border-radius: 12px !important;
-        background-color: #f5f5f7 !important;
-        border: 1px solid #d2d2d7 !important;
+        border-radius: 12px !important; background-color: #f5f5f7 !important;
+        border: 1px solid #d2d2d7 !important; padding: 12px !important;
     }
 
     .stButton button {
-        background-color: #1d1d1f !important;
-        color: white !important;
-        border-radius: 20px !important;
-        padding: 10px 40px !important;
-        font-weight: 600 !important;
-        width: 100% !important;
+        background-color: #1d1d1f !important; color: white !important;
+        border-radius: 20px !important; padding: 10px 40px !important;
+        font-weight: 600 !important; width: 100% !important; border: none !important;
     }
     
     .download-btn {
-        display: block;
-        background-color: #0071e3;
-        color: white !important;
-        padding: 15px;
-        border-radius: 12px;
-        text-decoration: none;
-        font-weight: 600;
-        margin-top: 20px;
+        display: block; background-color: #0071e3; color: white !important;
+        padding: 15px; border-radius: 12px; text-decoration: none;
+        font-weight: 600; margin-top: 10px; text-align: center;
     }
     </style>
     """, unsafe_allow_html=True)
 
+# --- POMOCNÁ FUNKCE: HUDEBNÍ ANALÝZA ---
+def analyze_music(url):
+    try:
+        # Streamování malého kousku pro rychlou analýzu (cca 3MB)
+        response = requests.get(url, stream=True)
+        audio_data = io.BytesIO()
+        for chunk in response.iter_content(chunk_size=1024):
+            audio_data.write(chunk)
+            if audio_data.tell() > 3000000: break # stop po 3MB
+        audio_data.seek(0)
+        
+        # Načtení do Librosa (analyzujeme prvních 20s)
+        y, sr = librosa.load(audio_data, duration=20)
+        
+        # Detekce BPM (tempa)
+        tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
+        
+        # Detekce tóniny (zjednodušená chroma analýza)
+        chroma = librosa.feature.chroma_stft(y=y, sr=sr)
+        notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+        key_idx = np.argmax(np.mean(chroma, axis=1))
+        
+        return f"{notes[key_idx]}", f"{int(round(float(tempo)))} BPM"
+    except:
+        return "Nedostupná", "Nedostupné"
+
+# --- UI STRUKTURA ---
 st.markdown('<div class="main-card">', unsafe_allow_html=True)
 st.markdown('<h1 class="title-text">AudioFlow</h1>', unsafe_allow_html=True)
-st.markdown('<p class="subtitle-text">Čistý převod na MP3</p>', unsafe_allow_html=True)
+st.markdown('<p class="subtitle-text">Analyzuj a převáděj v mžiku</p>', unsafe_allow_html=True)
 
 url_input = st.text_input("", placeholder="Vložte YouTube odkaz...")
-submit_btn = st.button("Převést na MP3")
+submit_btn = st.button("Analyzovat a převést")
 
 if submit_btn and url_input:
-    # Extrakce ID videa
     video_id = url_input.split("v=")[-1] if "v=" in url_input else url_input.split("/")[-1].split("?")[0]
     
     if video_id:
         try:
-            # Načtení klíče z konfigurace (Streamlit Secrets)
             RAPIDAPI_KEY = st.secrets["RAPIDAPI_KEY"]
-            
             headers = {
                 "x-rapidapi-key": RAPIDAPI_KEY,
                 "x-rapidapi-host": "youtube-mp36.p.rapidapi.com"
             }
-            params = {"id": video_id}
             api_url = "https://youtube-mp36.p.rapidapi.com/dl"
 
             progress_bar = st.progress(0)
@@ -102,23 +113,35 @@ if submit_btn and url_input:
             
             for i in range(1, 11):
                 progress_bar.progress(i * 10)
-                status_text.text("Připravuji audio soubor...")
+                status_text.text("Připravuji audio a analyzuji tóny...")
                 
-                response = requests.get(api_url, headers=headers, params=params)
+                response = requests.get(api_url, headers=headers, params={"id": video_id})
                 data = response.json()
 
                 if data.get("status") == "ok":
+                    # Spuštění hudební analýzy
+                    tonina, tempo = analyze_music(data.get("link"))
+                    
                     progress_bar.empty()
                     status_text.empty()
                     st.balloons()
-                    st.success(f"Skladba '{data.get('title')}' je připravena")
-                    st.markdown(f'<a href="{data.get("link")}" target="_blank" class="download-btn">STÁHNOUT MP3</a>', unsafe_allow_html=True)
+                    
+                    # ZOBRAZENÍ TABULKY S VÝSLEDKY
+                    st.markdown(f"""
+                        <table class="analysis-table">
+                            <tr><td>Název skladby</td><td>{data.get('title')}</td></tr>
+                            <tr><td>Tónina</td><td>{tonina}</td></tr>
+                            <tr><td>Tempo</td><td>{tempo}</td></tr>
+                            <tr><td>Délka</td><td>{int(data.get('duration') // 60)}m {int(data.get('duration') % 60)}s</td></tr>
+                        </table>
+                        <a href="{data.get('link')}" target="_blank" class="download-btn">STÁHNOUT MP3</a>
+                    """, unsafe_allow_html=True)
                     break
                 
-                time.sleep(3) # Čekání na zpracování
+                time.sleep(3)
         except Exception as e:
-            st.error("Chyba v konfiguraci nebo spojení.")
+            st.error("Chyba při komunikaci s API nebo analýze.")
     else:
-        st.warning("Neplatný odkaz.")
+        st.warning("Prosím vložte platný odkaz.")
 
 st.markdown('</div>', unsafe_allow_html=True)
