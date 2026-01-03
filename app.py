@@ -9,7 +9,7 @@ import urllib.parse
 # --- KONFIGURACE ---
 st.set_page_config(page_title="AudioFlow Pro", page_icon="🎵", layout="centered")
 
-# --- DESIGN (Všechny úpravy zafixovány) ---
+# --- DESIGN (Zafixovaný styl podle předchozích verzí) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
@@ -18,28 +18,18 @@ st.markdown("""
     .title-text { font-weight: 800; font-size: 3rem; color: #1d1d1f; margin-bottom: 5px; }
     .subtitle-text { color: #86868b; font-size: 1.1rem; margin-bottom: 40px; }
     
-    /* Tabulka s miniaturou */
     .analysis-table { width: 100%; border-collapse: collapse; margin: 20px 0; background-color: #f5f5f7; border-radius: 15px; overflow: hidden; }
     .analysis-table td { padding: 15px 20px; border-bottom: 1px solid #e5e5e7; text-align: left; vertical-align: middle; }
     .label-col { color: #86868b !important; font-weight: 600; width: 35%; }
     .mini-thumb { width: 100px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
     
-    /* Černé tlačítko s velkým paddingem */
     .stButton button { 
-        background-color: #1d1d1f !important; 
-        color: white !important; 
-        border-radius: 30px !important; 
-        width: 100% !important; 
-        border: none !important; 
-        padding: 16px 32px !important; 
-        font-weight: 600 !important;
-        font-size: 1rem !important;
-        letter-spacing: 0.02em !important;
-        transition: all 0.2s ease-in-out !important;
+        background-color: #1d1d1f !important; color: white !important; 
+        border-radius: 30px !important; width: 100% !important; border: none !important; 
+        padding: 16px 32px !important; font-weight: 600 !important; font-size: 1rem !important;
+        letter-spacing: 0.02em !important; transition: all 0.2s ease-in-out !important;
     }
     .stButton button:hover { background-color: #333333 !important; transform: translateY(-1px); }
-    
-    .stTextInput input { border-radius: 12px !important; background-color: #f5f5f7 !important; border: 1px solid #d2d2d7 !important; padding: 12px !important; }
     
     .service-link { display: inline-block; padding: 6px 12px; margin: 2px 4px 2px 0; border-radius: 6px; text-decoration: none; font-size: 0.8rem; font-weight: 600; }
     .chordify { background-color: #eb613d; color: white !important; }
@@ -62,7 +52,6 @@ def get_itunes_meta(query):
         res = requests.get(url).json()
         if res['resultCount'] > 0:
             track = res['results'][0]
-            # Vytvoření odkazu na Spotify vyhledávání
             clean_query = urllib.parse.quote(query)
             return {
                 "album": track.get("collectionName", "Neznámo"),
@@ -82,7 +71,7 @@ def log_to_csv(title, video_id, duration_str):
     else:
         new_data.to_csv(log_file, mode='a', index=False, header=False, encoding='utf-8-sig')
 
-# --- UI ---
+# --- HLAVNÍ STRÁNKA ---
 st.markdown('<div class="main-card">', unsafe_allow_html=True)
 st.markdown('<h1 class="title-text">AudioFlow</h1>', unsafe_allow_html=True)
 st.markdown('<p class="subtitle-text">Profesionální hudební nástroj</p>', unsafe_allow_html=True)
@@ -103,14 +92,14 @@ if submit_btn and url_input:
             title = video_info.get('title', 'Skladba z YouTube')
             thumb_url = f"https://img.youtube.com/vi/{video_id}/mqdefault.jpg"
             
-            # Hudební detektiv (iTunes)
+            # iTunes detektiv
             music_meta = get_itunes_meta(title)
             
             # RapidAPI pro MP3
             RAPIDAPI_KEY = st.secrets["RAPIDAPI_KEY"]
             headers = {"x-rapidapi-key": RAPIDAPI_KEY, "x-rapidapi-host": "youtube-mp36.p.rapidapi.com"}
             
-            with st.spinner("Zpracovávám náhled a soubor..."):
+            with st.spinner("Zpracovávám..."):
                 found_link = None
                 duration_str = "Neznámo"
                 res = requests.get("https://youtube-mp36.p.rapidapi.com/dl", headers=headers, params={"id": video_id})
@@ -122,7 +111,7 @@ if submit_btn and url_input:
             
             search_query = urllib.parse.quote(title)
             
-            # 1. Tabulka (Základní info)
+            # 1. Horní tabulka (Náhled a Název)
             st.markdown(f"""
                 <table class="analysis-table">
                     <tr>
@@ -148,6 +137,7 @@ if submit_btn and url_input:
             
             spotify_link = music_meta['spotify_url'] if music_meta else f"https://open.spotify.com/search/{search_query}"
             
+            # DŮLEŽITÉ: Celá tato tabulka musí být v jednom st.markdown s unsafe_allow_html=True
             st.markdown(f"""
                 <table class="analysis-table">
                     {itunes_rows}
@@ -170,7 +160,7 @@ if submit_btn and url_input:
                 log_to_csv(title, video_id, duration_str)
             
         except Exception as e:
-            st.error("Chyba při komunikaci se serverem.")
+            st.error("Chyba při zpracování skladby.")
     else:
         st.warning("Vložte platný odkaz.")
 
