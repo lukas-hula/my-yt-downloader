@@ -122,35 +122,37 @@ if submit_btn and url_input:
             st.video(f"https://www.youtube.com/watch?v={video_id}")
             
             # 2. SESTAVENÍ DOLNÍ TABULKY DO JEDNÉ PROMĚNNÉ
-            itunes_html = ""
+            # Sestavíme celou tabulku do jedné proměnné
+            itunes_data = ""
             if music_meta:
-                itunes_html = f"""
+                itunes_data = f"""
                     <tr><td class="label-col">Album</td><td>{music_meta['album']}</td></tr>
                     <tr><td class="label-col">Žánr</td><td>{music_meta['genre']}</td></tr>
                     <tr><td class="label-col">Rok</td><td>{music_meta['year']}</td></tr>
                 """
-            
+
+            # Spotify odkaz
             spotify_url = f"https://open.spotify.com/search/{search_query}"
-            
-            # Finální sestavení tabulky
-            final_table_html = f"""
-                <table class="analysis-table">
-                    {itunes_html}
-                    <tr><td class="label-col">Kvalita</td><td>320 kbps (HD)</td></tr>
-                    <tr><td class="label-col">YouTube ID</td><td><code>{video_id}</code></td></tr>
-                    <tr>
-                        <td class="label-col">Služby</td>
-                        <td>
-                            <a href="https://chordify.net/search/{search_query}" target="_blank" class="service-link chordify">🎸 Akordy</a>
-                            <a href="https://genius.com/search?q={search_query}" target="_blank" class="service-link genius">📝 Text</a>
-                            <a href="{spotify_url}" target="_blank" class="service-link spotify">🎧 Spotify</a>
-                        </td>
-                    </tr>
-                </table>
+
+            # Finální HTML kód tabulky
+            tabulka_html = f"""
+            <table class="analysis-table">
+                {itunes_data}
+                <tr><td class="label-col">Kvalita</td><td>320 kbps (HD)</td></tr>
+                <tr><td class="label-col">YouTube ID</td><td><code>{video_id}</code></td></tr>
+                <tr>
+                    <td class="label-col">Služby</td>
+                    <td>
+                        <a href="https://chordify.net/search/{search_query}" target="_blank" class="service-link chordify">🎸 Akordy</a>
+                        <a href="https://genius.com/search?q={search_query}" target="_blank" class="service-link genius">📝 Text</a>
+                        <a href="{spotify_url}" target="_blank" class="service-link spotify">🎧 Spotify</a>
+                    </td>
+                </tr>
+            </table>
             """
-            
-            # Vykreslení celé tabulky najednou
-            st.markdown(final_table_html, unsafe_allow_html=True)
+
+            # DŮLEŽITÉ: Příkaz, který tabulku správně zobrazí
+            st.markdown(tabulka_html, unsafe_allow_html=True)
             
             if found_link:
                 st.balloons()
