@@ -9,7 +9,7 @@ import urllib.parse
 # --- KONFIGURACE ---
 st.set_page_config(page_title="AudioFlow Pro", page_icon="🎵", layout="centered")
 
-# --- DESIGN (Zafixovaný styl) ---
+# --- DESIGN (Všechny úpravy zafixovány) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
@@ -18,18 +18,28 @@ st.markdown("""
     .title-text { font-weight: 800; font-size: 3rem; color: #1d1d1f; margin-bottom: 5px; }
     .subtitle-text { color: #86868b; font-size: 1.1rem; margin-bottom: 40px; }
     
+    /* Tabulka s miniaturou */
     .analysis-table { width: 100%; border-collapse: collapse; margin: 20px 0; background-color: #f5f5f7; border-radius: 15px; overflow: hidden; }
     .analysis-table td { padding: 15px 20px; border-bottom: 1px solid #e5e5e7; text-align: left; vertical-align: middle; }
     .label-col { color: #86868b !important; font-weight: 600; width: 35%; }
     .mini-thumb { width: 100px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
     
+    /* Černé tlačítko s velkým paddingem */
     .stButton button { 
-        background-color: #1d1d1f !important; color: white !important; 
-        border-radius: 30px !important; width: 100% !important; border: none !important; 
-        padding: 16px 32px !important; font-weight: 600 !important; font-size: 1rem !important;
-        letter-spacing: 0.02em !important; transition: all 0.2s ease-in-out !important;
+        background-color: #1d1d1f !important; 
+        color: white !important; 
+        border-radius: 30px !important; 
+        width: 100% !important; 
+        border: none !important; 
+        padding: 16px 32px !important; 
+        font-weight: 600 !important;
+        font-size: 1rem !important;
+        letter-spacing: 0.02em !important;
+        transition: all 0.2s ease-in-out !important;
     }
     .stButton button:hover { background-color: #333333 !important; transform: translateY(-1px); }
+    
+    .stTextInput input { border-radius: 12px !important; background-color: #f5f5f7 !important; border: 1px solid #d2d2d7 !important; padding: 12px !important; }
     
     .service-link { display: inline-block; padding: 6px 12px; margin: 2px 4px 2px 0; border-radius: 6px; text-decoration: none; font-size: 0.8rem; font-weight: 600; }
     .chordify { background-color: #eb613d; color: white !important; }
@@ -98,7 +108,7 @@ if submit_btn and url_input:
             RAPIDAPI_KEY = st.secrets["RAPIDAPI_KEY"]
             headers = {"x-rapidapi-key": RAPIDAPI_KEY, "x-rapidapi-host": "youtube-mp36.p.rapidapi.com"}
             
-            with st.spinner("Analyzuji hudební data a připravuji soubor..."):
+            with st.spinner("Zpracovávám náhled a soubor..."):
                 found_link = None
                 duration_str = "Neznámo"
                 res = requests.get("https://youtube-mp36.p.rapidapi.com/dl", headers=headers, params={"id": video_id})
@@ -110,7 +120,7 @@ if submit_btn and url_input:
             
             search_query = urllib.parse.quote(title)
             
-            # Zobrazení Tabulky (Zafixováno)
+            # Horní tabulka (Základní info)
             st.markdown(f"""
                 <table class="analysis-table">
                     <tr>
@@ -118,28 +128,14 @@ if submit_btn and url_input:
                         <td><img src="{thumb_url}" class="mini-thumb"><br><strong>{title}</strong></td>
                     </tr>
                     <tr><td class="label-col">Délka</td><td>{duration_str}</td></tr>
-            """, unsafe_allow_html=True)
-            
-            # Pokud máme iTunes data, přidáme řádky
-            if music_meta:
-                st.markdown(f"""
-                    <tr><td class="label-col">Album</td><td>{music_meta['album']}</td></tr>
-                    <tr><td class="label-col">Žánr</td><td>{music_meta['genre']}</td></tr>
-                    <tr><td class="label-col">Rok</td><td>{music_meta['year']}</td></tr>
-                """, unsafe_allow_html=True)
-            
-            st.markdown(f"""
                 </table>
             """, unsafe_allow_html=True)
             
-            # AUDIO PŘEHRÁVAČ (Zafixováno)
+            # Přehrávač
             st.write("🎵 **Poslechová ukázka:**")
             st.video(f"https://www.youtube.com/watch?v={video_id}")
             
-            # SJEDNOCENÁ TABULKA METADAT (iTunes + Technické údaje + Služby)
-            spotify_btn = f'<a href="{music_meta["spotify_search"]}" target="_blank" class="service-link spotify">🎧 Spotify</a>' if music_meta else ""
-            
-            # Příprava řádků pro iTunes data, pokud existují
+            # Sjednocená dolní tabulka (iTunes + Technické údaje + Služby)
             itunes_rows = ""
             if music_meta:
                 itunes_rows = f"""
@@ -147,7 +143,9 @@ if submit_btn and url_input:
                     <tr><td class="label-col">Žánr</td><td>{music_meta['genre']}</td></tr>
                     <tr><td class="label-col">Rok</td><td>{music_meta['year']}</td></tr>
                 """
-
+            
+            spotify_btn = f'<a href="{music_meta["spotify_search"]}" target="_blank" class="service-link spotify">🎧 Spotify</a>' if music_meta else ""
+            
             st.markdown(f"""
                 <table class="analysis-table">
                     {itunes_rows}
