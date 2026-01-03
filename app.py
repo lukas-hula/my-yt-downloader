@@ -3,83 +3,66 @@ import requests
 import time
 import librosa
 import numpy as np
-import io
+import os
+from pydub import AudioSegment
 
 # --- KONFIGURACE STRÁNKY ---
-st.set_page_config(
-    page_title="AudioFlow",
-    page_icon="🎵",
-    layout="centered"
-)
+st.set_page_config(page_title="AudioFlow", page_icon="🎵", layout="centered")
 
-# --- ČISTÝ DESIGN ---
+# --- DESIGN ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
-    
     .block-container { padding-top: 2rem !important; }
     header {visibility: hidden;}
-    
     .stApp { background-color: #ffffff; font-family: 'Inter', sans-serif; }
     .main-card { text-align: center; max-width: 550px; margin: 0 auto; }
     .title-text { font-weight: 800; font-size: 2.8rem; letter-spacing: -0.05em; color: #1d1d1f; margin-bottom: 0px; }
     .subtitle-text { color: #86868b; font-size: 1.1rem; margin-bottom: 30px; }
-
-    /* Elegantní tabulka */
-    .analysis-table {
-        width: 100%; border-collapse: collapse; margin: 25px 0;
-        font-size: 0.95rem; border-radius: 15px; overflow: hidden;
-        background-color: #f5f5f7;
-    }
-    .analysis-table td {
-        padding: 15px 20px; border-bottom: 1px solid #e5e5e7;
-        text-align: left; color: #1d1d1f;
-    }
+    .analysis-table { width: 100%; border-collapse: collapse; margin: 25px 0; font-size: 0.95rem; border-radius: 15px; overflow: hidden; background-color: #f5f5f7; }
+    .analysis-table td { padding: 15px 20px; border-bottom: 1px solid #e5e5e7; text-align: left; color: #1d1d1f; }
     .analysis-table td:first-child { color: #86868b; font-weight: 600; width: 40%; }
-
-    .stTextInput input {
-        border-radius: 12px !important; background-color: #f5f5f7 !important;
-        border: 1px solid #d2d2d7 !important; padding: 12px !important;
-    }
-
-    .stButton button {
-        background-color: #1d1d1f !important; color: white !important;
-        border-radius: 20px !important; padding: 10px 40px !important;
-        font-weight: 600 !important; width: 100% !important; border: none !important;
-    }
-    
-    .download-btn {
-        display: block; background-color: #0071e3; color: white !important;
-        padding: 15px; border-radius: 12px; text-decoration: none;
-        font-weight: 600; margin-top: 10px; text-align: center;
-    }
+    .stTextInput input { border-radius: 12px !important; background-color: #f5f5f7 !important; border: 1px solid #d2d2d7 !important; padding: 12px !important; }
+    .stButton button { background-color: #1d1d1f !important; color: white !important; border-radius: 20px !important; padding: 10px 40px !important; font-weight: 600 !important; width: 100% !important; border: none !important; }
+    .download-btn { display: block; background-color: #0071e3; color: white !important; padding: 15px; border-radius: 12px; text-decoration: none; font-weight: 600; margin-top: 10px; text-align: center; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- OPRAVENÁ FUNKCE PRO ANALÝZU ---
+# --- ROBUSTNÍ FUNKCE PRO ANALÝZU ---
 def analyze_music(url):
+    temp_filename = "temp_sample.mp3"
     try:
-        # 1. Stažení malého vzorku (cca 2MB) do paměti
-        response = requests.get(url, timeout=10)
-        audio_bytes = io.BytesIO(response.content)
+        # 1. Stažení vzorku (cca 1MB)
+        r = requests.get(url, stream=True)
+        with open(temp_filename, 'wb') as f:
+            for chunk in r.iter_content(chunk_size=1024):
+                f.write(chunk)
+                if os.path.getsize(temp_filename) > 1500000: break # stop po 1.5MB
         
-        # 2. Načtení pomocí Librosa (načteme prvních 30 sekund)
-        # Používáme soundfile jako backend pro lepší stabilitu v cloudu
-        y, sr = librosa.load(audio_bytes, duration=30)
+        # 2. Načtení a převod na surová data přes pydub (odolnější proti chybám formátu)
+        audio = AudioSegment.from_file(temp_filename)
+        samples = np.array(audio.get_array_of_samples()).astype(np.float32) / 32768.0
         
-        # 3. Analýza tempa
-        onset_env = librosa.onset.onset_strength(y=y, sr=sr)
-        tempo = librosa.feature.tempo(onset_envelope=onset_env, sr=sr)
+        # Pokud je stereo, uděláme mono
+        if audio.channels == 2:
+            samples = samples.reshape((-1, 2)).mean(axis=1)
         
-        # 4. Analýza tóniny
-        chroma = librosa.feature.chroma_cqt(y=y, sr=sr)
-        chroma_avg = np.mean(chroma, axis=1)
+        sr = audio.frame_rate
+        
+        # 3. Analýza tóniny (Chroma CQT)
+        chroma = librosa.feature.chroma_cqt(y=samples, sr=sr)
         notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
-        key = notes[np.argmax(chroma_avg)]
+        key = notes[np.argmax(np.mean(chroma, axis=1))]
         
-        return f"{key}", f"{int(round(float(tempo[0])))} BPM"
+        # 4. Analýza tempa
+        tempo = librosa.feature.tempo(y=samples, sr=sr)
+        
+        return str(key), f"{int(round(float(tempo[0])))} BPM"
     except Exception as e:
         return "Nezjištěno", "Nezjištěno"
+    finally:
+        if os.path.exists(temp_filename):
+            os.remove(temp_filename)
 
 # --- UI STRUKTURA ---
 st.markdown('<div class="main-card">', unsafe_allow_html=True)
@@ -95,28 +78,21 @@ if submit_btn and url_input:
     if video_id:
         try:
             RAPIDAPI_KEY = st.secrets["RAPIDAPI_KEY"]
-            headers = {
-                "x-rapidapi-key": RAPIDAPI_KEY,
-                "x-rapidapi-host": "youtube-mp36.p.rapidapi.com"
-            }
+            headers = {"x-rapidapi-key": RAPIDAPI_KEY, "x-rapidapi-host": "youtube-mp36.p.rapidapi.com"}
             api_url = "https://youtube-mp36.p.rapidapi.com/dl"
 
             progress_bar = st.progress(0)
             status_text = st.empty()
             
-            # Polling pro získání odkazu
             for i in range(1, 15):
                 progress_bar.progress(min(i * 7, 90))
                 status_text.text("Zpracovávám audio na serveru...")
-                
                 response = requests.get(api_url, headers=headers, params={"id": video_id})
                 data = response.json()
 
                 if data.get("status") == "ok":
                     mp3_link = data.get("link")
                     status_text.text("Provádím hudební analýzu...")
-                    
-                    # Spuštění opravené analýzy
                     tonina, tempo = analyze_music(mp3_link)
                     
                     progress_bar.progress(100)
@@ -133,7 +109,6 @@ if submit_btn and url_input:
                         <a href="{mp3_link}" target="_blank" class="download-btn">STÁHNOUT MP3</a>
                     """, unsafe_allow_html=True)
                     break
-                
                 time.sleep(3)
         except Exception as e:
             st.error("Chyba při komunikaci s API.")
