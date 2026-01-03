@@ -22,6 +22,9 @@ st.markdown("""
     .stTextInput input { border-radius: 12px !important; background-color: #f5f5f7 !important; border: 1px solid #d2d2d7 !important; }
     .stButton button { background-color: #1d1d1f !important; color: white !important; border-radius: 25px !important; width: 100% !important; border: none !important; }
     .download-link { display: block; background-color: #0071e3; color: white !important; padding: 18px; border-radius: 15px; text-decoration: none; font-weight: 700; margin-top: 10px; text-align: center; }
+    
+    /* Styl pro nadpis historie */
+    .history-title { margin-top: 50px; font-weight: 800; font-size: 1.8rem; color: #1d1d1f; text-align: left; border-bottom: 2px solid #f5f5f7; padding-bottom: 10px; margin-bottom: 20px; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -42,7 +45,7 @@ def log_to_csv(title, video_id, duration_str):
     else:
         new_data.to_csv(log_file, mode='a', index=False, header=False, encoding='utf-8-sig')
 
-# --- HLAVNÍ STRÁNKA ---
+# --- HLAVNÍ STRÁNKA (PŘEVODNÍK) ---
 st.markdown('<div class="main-card">', unsafe_allow_html=True)
 st.markdown('<h1 class="title-text">AudioFlow</h1>', unsafe_allow_html=True)
 st.markdown('<p class="subtitle-text">Profesionální převodník s evidencí</p>', unsafe_allow_html=True)
@@ -88,27 +91,28 @@ if submit_btn and url_input:
     else:
         st.warning("Vložte platný odkaz.")
 
-st.markdown('</div>', unsafe_allow_html=True)
+# --- SEKCE HISTORIE (PŘÍMO VIDITELNÁ) ---
+st.markdown('<div class="history-title">Historie stažení</div>', unsafe_allow_html=True)
 
-# --- ADMIN SEKCE ---
-st.markdown("<br><br><br><br>", unsafe_allow_html=True)
-with st.expander("🔐 Administrace"):
-    password = st.text_input("Zadejte heslo pro přístup k historii", type="password")
-    if password == "admin123": # Tady si můžete změnit heslo
-        if os.path.isfile("history.csv"):
-            df_history = pd.read_csv("history.csv")
-            st.write("### Historie stahování")
-            st.dataframe(df_history.sort_index(ascending=False), use_container_width=True)
-            
-            # Tlačítko pro stažení CSV souboru k vám do PC
-            csv_data = df_history.to_csv(index=False).encode('utf-8-sig')
-            st.download_button(
-                label="📥 Stáhnout celou historii (CSV)",
-                data=csv_data,
-                file_name=f"audioflow_export_{datetime.now().strftime('%Y%m%d')}.csv",
-                mime="text/csv"
-            )
-        else:
-            st.info("Zatím žádná data v historii.")
-    elif password:
-        st.error("Nesprávné heslo.")
+if os.path.isfile("history.csv"):
+    df_history = pd.read_csv("history.csv")
+    
+    # Zobrazení tabulky (nejnovější záznamy nahoře)
+    st.dataframe(
+        df_history.sort_index(ascending=False), 
+        use_container_width=True,
+        hide_index=True
+    )
+    
+    # Tlačítko pro export do CSV
+    csv_data = df_history.to_csv(index=False).encode('utf-8-sig')
+    st.download_button(
+        label="📥 Stáhnout celou historii jako CSV",
+        data=csv_data,
+        file_name=f"audioflow_history_{datetime.now().strftime('%Y%m%d')}.csv",
+        mime="text/csv"
+    )
+else:
+    st.info("Zatím nebyla stažena žádná skladba. Historie se objeví po prvním převodu.")
+
+st.markdown('</div>', unsafe_allow_html=True)
